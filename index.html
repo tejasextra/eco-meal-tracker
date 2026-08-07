@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>EcoTracker - Mobile Calorie & Carbon Footprint App</title>
+  <meta name="description" content="Track daily calories and carbon footprint (CO2 emissions) of your meals with browser local storage.">
+  <meta name="theme-color" content="#059669">
+
+  <!-- Design System CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <!-- Mobile App Frame Container -->
+  <div class="app-container">
+
+    <!-- Top App Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <i data-lucide="leaf"></i>
+        </div>
+        <div class="brand-text">
+          <h1>EcoTracker</h1>
+          <span>Meal & CO₂ Budget</span>
+        </div>
+
+        <!-- Desktop Header Navigation Links -->
+        <nav class="desktop-nav-links">
+          <button class="desktop-nav-btn active" data-tab="tabHome">
+            <i data-lucide="home"></i> Home
+          </button>
+          <button class="desktop-nav-btn" data-tab="tabReports">
+            <i data-lucide="bar-chart-3"></i> Reports
+          </button>
+          <button class="desktop-nav-btn" data-tab="tabDatabase">
+            <i data-lucide="utensils"></i> Food Directory
+          </button>
+          <button class="desktop-nav-btn desktop-add-btn" id="btnDesktopAddMeal">
+            <i data-lucide="plus"></i> Add Meal
+          </button>
+        </nav>
+      </div>
+
+      <div class="header-actions">
+        <button class="icon-btn" id="btnExportData" title="Export Backup JSON">
+          <i data-lucide="download"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Toast Notification -->
+    <div class="toast-msg" id="toastMsg">Meal Saved Successfully! 🌱</div>
+
+    <!-- Main View Content Area -->
+    <main class="app-content">
+
+      <!-- ===================================================================
+           TAB 1: HOME DASHBOARD
+           =================================================================== -->
+      <section class="tab-view active" id="tabHome">
+        
+        <div class="home-desktop-grid">
+          <!-- Left Column: Date & Gauges & Impact -->
+          <div>
+            <!-- Date Selector -->
+            <div class="date-selector-bar">
+              <button class="date-nav-btn" id="btnPrevDate"><i data-lucide="chevron-left"></i></button>
+              <div class="date-display" id="dateDisplayLabel">Today</div>
+              <button class="date-nav-btn" id="btnNextDate"><i data-lucide="chevron-right"></i></button>
+            </div>
+
+            <!-- Progress Gauges Grid -->
+            <div class="dashboard-gauges">
+              <!-- Calorie Gauge -->
+              <div class="gauge-card calories-card">
+                <div class="gauge-label">Calories Intake</div>
+                <div class="gauge-ring-container">
+                  <svg viewBox="0 0 100 100">
+                    <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                    <circle class="gauge-progress calorie-progress" id="ringCalorie" cx="50" cy="50" r="40" 
+                            stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
+                  </svg>
+                  <div class="gauge-inner-text">
+                    <span class="gauge-num" id="valCalorieToday">0</span>
+                    <span class="gauge-unit">kcal</span>
+                  </div>
+                </div>
+                <div class="gauge-target" id="targetCalorieLabel">Goal: 2,000 kcal</div>
+              </div>
+
+              <!-- Carbon Gauge -->
+              <div class="gauge-card carbon-card">
+                <div class="gauge-label">Carbon Footprint</div>
+                <div class="gauge-ring-container">
+                  <svg viewBox="0 0 100 100">
+                    <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                    <circle class="gauge-progress carbon-progress" id="ringCarbon" cx="50" cy="50" r="40" 
+                            stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
+                  </svg>
+                  <div class="gauge-inner-text">
+                    <span class="gauge-num" id="valCarbonToday">0.0</span>
+                    <span class="gauge-unit">kg CO₂e</span>
+                  </div>
+                </div>
+                <div class="gauge-target" id="targetCarbonLabel">Budget: 3.5 kg</div>
+              </div>
+            </div>
+
+            <!-- Eco Impact Equivalency Banner -->
+            <div class="eco-impact-banner">
+              <div class="eco-banner-header">
+                <div class="eco-banner-title">
+                  <i data-lucide="globe"></i> Real-World Impact
+                </div>
+                <span class="eco-banner-badge" id="ecoScoreBadge">Eco Level: High</span>
+              </div>
+              <div class="eco-equiv-grid">
+                <div class="equiv-item">
+                  <div class="equiv-icon">🚗</div>
+                  <div class="equiv-val" id="equivCarKm">0.0 km</div>
+                  <div class="equiv-desc">Driving eq.</div>
+                </div>
+                <div class="equiv-item">
+                  <div class="equiv-icon">📱</div>
+                  <div class="equiv-val" id="equivPhones">0</div>
+                  <div class="equiv-desc">Phone charges</div>
+                </div>
+                <div class="equiv-item">
+                  <div class="equiv-icon">🌳</div>
+                  <div class="equiv-val" id="equivTrees">0.0</div>
+                  <div class="equiv-desc">Trees offset/yr</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Today's Macronutrient Summary -->
+            <div class="macro-card-section" id="homeMacroContainer">
+              <!-- Dynamically rendered -->
+            </div>
+          </div>
+
+          <!-- Right Column: Today's Logged Meals Timeline -->
+          <div>
+            <div class="section-title">
+              <span>Today's Meals</span>
+              <span style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);" id="mealCountLabel">0 meals</span>
+            </div>
+            
+            <div class="meal-timeline" id="mealTimelineContainer">
+              <!-- Dynamically populated via app.js -->
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===================================================================
+           TAB 2: REPORTS & STATISTICS
+           =================================================================== -->
+      <section class="tab-view" id="tabReports">
+        
+        <div class="reports-controls">
+          <div class="section-title" style="margin-bottom: 0;">Analytics & Reports</div>
+          <div class="period-toggle">
+            <button class="period-btn active" data-period="daily">Daily</button>
+            <button class="period-btn" data-period="weekly">Weekly</button>
+          </div>
+        </div>
+
+        <div class="reports-desktop-grid">
+          <!-- Calorie Chart Card -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">Calorie Intake Trend</div>
+                <div class="chart-sub">Daily total kcal</div>
+              </div>
+              <div style="font-weight: 700; color: var(--calorie-color); font-size: 0.9rem;" id="chartCalorieAvg">Avg: 0 kcal</div>
+            </div>
+            <div class="canvas-container">
+              <canvas id="chartCalorieCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- CO2 Footprint Chart Card -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">CO₂ Emissions Trend</div>
+                <div class="chart-sub">Daily kg CO₂e footprint</div>
+              </div>
+              <div style="font-weight: 700; color: var(--carbon-color); font-size: 0.9rem;" id="chartCarbonAvg">Avg: 0.0 kg</div>
+            </div>
+            <div class="canvas-container">
+              <canvas id="chartCarbonCanvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="reports-desktop-grid">
+          <!-- Category Breakdown Card -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">CO₂ Footprint by Food Category</div>
+            </div>
+            <div class="cat-breakdown-container" id="catBreakdownContainer">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Achievements & Badges Section -->
+          <div class="achievement-card-section" id="achievementsContainer">
+            <!-- Dynamically populated by js/achievements.js -->
+          </div>
+        </div>
+
+        <!-- Macronutrient Intake Summary & Distribution -->
+        <div class="macro-card-section" id="reportsMacroContainer">
+          <!-- Dynamically populated by js/charts.js -->
+        </div>
+
+        <!-- Data Management Options -->
+        <div class="data-mgmt-bar">
+          <button class="btn-secondary" id="btnExportJSON">
+            <i data-lucide="download"></i> Export Data
+          </button>
+          <button class="btn-secondary" id="btnImportJSON">
+            <i data-lucide="upload"></i> Import JSON
+          </button>
+        </div>
+        <input type="file" id="fileImportInput" accept=".json" style="display: none;">
+
+      </section>
+
+      <!-- ===================================================================
+           TAB 3: FOOD DATABASE
+           =================================================================== -->
+      <section class="tab-view" id="tabDatabase">
+        <div class="section-title">
+          <span>Food Directory (54 Items)</span>
+          <button class="btn-secondary" style="padding: 6px 12px; font-size: 0.78rem;" id="btnOpenAddCustomFood">
+            <i data-lucide="plus"></i> Add Custom Food
+          </button>
+        </div>
+
+        <!-- Search Bar -->
+        <div style="margin-bottom: 12px;">
+          <input type="text" class="form-input" id="dbSearchInput" placeholder="Search food items..." style="width: 100%;">
+        </div>
+
+        <!-- Category Horizontal Filter -->
+        <div class="category-pills-scroll" id="dbCategoryPills">
+          <button class="cat-pill active" data-cat="ALL">All</button>
+          <button class="cat-pill" data-cat="Rice">Rice</button>
+          <button class="cat-pill" data-cat="Dal">Dal</button>
+          <button class="cat-pill" data-cat="Paneer">Paneer</button>
+          <button class="cat-pill" data-cat="Vegetable">Vegetables</button>
+          <button class="cat-pill" data-cat="Bread">Breads</button>
+          <button class="cat-pill" data-cat="South Indian">South Indian</button>
+          <button class="cat-pill" data-cat="Non-Veg">Non-Veg</button>
+          <button class="cat-pill" data-cat="Dairy">Dairy</button>
+          <button class="cat-pill" data-cat="Snack">Snacks</button>
+          <button class="cat-pill" data-cat="Street Food">Street Food</button>
+        </div>
+
+        <!-- Food List Grid -->
+        <div class="food-select-grid desktop-grid" id="dbFoodListContainer">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Floating Action Button (FAB): Add Meal -->
+    <button class="fab-add-meal" id="fabAddMeal">
+      <i data-lucide="plus"></i> Add Meal
+    </button>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="tabHome">
+        <i data-lucide="home"></i>
+        <span>Home</span>
+      </button>
+      <button class="nav-item" data-tab="tabAddMealTrigger">
+        <i data-lucide="plus-circle"></i>
+        <span>Add Meal</span>
+      </button>
+      <button class="nav-item" data-tab="tabReports">
+        <i data-lucide="bar-chart-3"></i>
+        <span>Reports</span>
+      </button>
+      <button class="nav-item" data-tab="tabDatabase">
+        <i data-lucide="utensils"></i>
+        <span>Foods</span>
+      </button>
+    </nav>
+
+    <!-- ===================================================================
+         SLIDE-UP BOTTOM SHEET DRAWER (ADD MEAL MODAL)
+         =================================================================== -->
+    <div class="drawer-backdrop" id="drawerBackdrop">
+      <div class="bottom-drawer" id="addMealDrawer">
+        
+        <!-- Handle bar -->
+        <div class="drawer-handle-bar">
+          <div class="drawer-pill"></div>
+        </div>
+
+        <!-- Live Totals Header -->
+        <div class="drawer-live-header">
+          <div class="live-totals-box">
+            <div class="live-metric">
+              <span class="live-metric-title">Meal Calories</span>
+              <span class="live-metric-val cal" id="drawerLiveCalories">0 kcal</span>
+            </div>
+            <div class="live-metric">
+              <span class="live-metric-title">Meal Footprint</span>
+              <span class="live-metric-val co2" id="drawerLiveCarbon">0.00 kg</span>
+            </div>
+          </div>
+          <button class="drawer-close-btn" id="btnCloseDrawer">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <!-- Drawer Content -->
+        <div class="drawer-body">
+          
+          <!-- Date / Time & Meal Type Inputs -->
+          <div class="form-group-row">
+            <div class="form-field">
+              <label class="form-label" for="inputMealType">Meal Type</label>
+              <select class="form-select" id="inputMealType">
+                <option value="Breakfast">Breakfast 🌅</option>
+                <option value="Lunch" selected>Lunch ☀️</option>
+                <option value="Dinner">Dinner 🌙</option>
+                <option value="Snack">Snack 🥨</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="inputMealTime">Date & Time</label>
+              <input type="datetime-local" class="form-input" id="inputMealTime">
+            </div>
+          </div>
+
+          <!-- Category Pills Filter -->
+          <div class="category-pills-scroll" id="drawerCategoryPills">
+            <button class="cat-pill active" data-cat="ALL">All Foods</button>
+            <button class="cat-pill" data-cat="Rice">Rice</button>
+            <button class="cat-pill" data-cat="Dal">Dal</button>
+            <button class="cat-pill" data-cat="Paneer">Paneer</button>
+            <button class="cat-pill" data-cat="Vegetable">Vegetables</button>
+            <button class="cat-pill" data-cat="Bread">Breads</button>
+            <button class="cat-pill" data-cat="South Indian">South Indian</button>
+            <button class="cat-pill" data-cat="Non-Veg">Non-Veg</button>
+            <button class="cat-pill" data-cat="Dairy">Dairy</button>
+            <button class="cat-pill" data-cat="Snack">Snacks</button>
+          </div>
+
+          <!-- Search Input -->
+          <div style="margin-bottom: 12px;">
+            <input type="text" class="form-input" id="drawerSearchInput" placeholder="🔍 Search foods..." style="width: 100%;">
+          </div>
+
+          <!-- Food Items Selection List -->
+          <div class="food-select-grid" id="drawerFoodList">
+            <!-- Dynamically rendered -->
+          </div>
+
+        </div>
+
+        <!-- Drawer Footer Save Button -->
+        <div class="drawer-footer-action">
+          <button class="btn-primary-block" id="btnSaveMeal">Save Meal 🌱</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         MODAL: ADD CUSTOM FOOD ITEM
+         =================================================================== -->
+    <div class="modal-overlay" id="customFoodModal">
+      <div class="modal-card">
+        <div class="modal-title">Add Custom Food Item</div>
+        
+        <div class="form-field" style="margin-bottom: 10px;">
+          <label class="form-label">Food Name</label>
+          <input type="text" class="form-input" id="cfName" placeholder="e.g. Oats Porridge">
+        </div>
+
+        <div class="form-group-row">
+          <div class="form-field">
+            <label class="form-label">Category</label>
+            <select class="form-select" id="cfCategory">
+              <option value="Breakfast">Breakfast</option>
+              <option value="Rice">Rice</option>
+              <option value="Dal">Dal</option>
+              <option value="Paneer">Paneer</option>
+              <option value="Vegetable">Vegetable</option>
+              <option value="Bread">Bread</option>
+              <option value="South Indian">South Indian</option>
+              <option value="Non-Veg">Non-Veg</option>
+              <option value="Dairy">Dairy</option>
+              <option value="Dessert">Dessert</option>
+              <option value="Snack">Snack</option>
+              <option value="Street Food">Street Food</option>
+              <option value="Custom">Custom</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Calories (kcal)</label>
+            <input type="number" class="form-input" id="cfCalories" placeholder="250">
+          </div>
+        </div>
+
+        <div class="form-group-row">
+          <div class="form-field">
+            <label class="form-label">CO₂ Footprint (kg CO₂e)</label>
+            <input type="number" step="0.01" class="form-input" id="cfCarbon" placeholder="0.35">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Unit Description</label>
+            <input type="text" class="form-input" id="cfUnit" placeholder="kg CO2e per serving">
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 14px;">
+          <button class="btn-secondary" style="flex: 1;" id="btnCloseCustomFoodModal">Cancel</button>
+          <button class="btn-primary-block" style="flex: 1;" id="btnSaveCustomFood">Add Item</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
