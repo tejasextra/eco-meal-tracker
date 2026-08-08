@@ -1,8 +1,10 @@
-import { INITIAL_FOOD_ITEMS } from './foodData.js';
+import { INITIAL_FOOD_ITEMS } from './foodData.js?v=1.0.2';
 
 const STORAGE_KEYS = {
   MEALS: 'eco_tracker_meals_v1',
   FOODS: 'eco_tracker_all_foods_v2',
+  GROCERIES: 'eco_tracker_groceries_v1',
+  PROFILE: 'eco_tracker_profile_v1',
   SETTINGS: 'eco_tracker_settings_v1'
 };
 
@@ -11,6 +13,168 @@ const DEFAULT_SETTINGS = {
   dailyCarbonBudget: 3.5, // kg CO2e per day
   userName: 'Eco Explorer'
 };
+
+/**
+ * Get User Profile from LocalStorage
+ */
+export function getUserProfile() {
+  const raw = localStorage.getItem(STORAGE_KEYS.PROFILE);
+  return raw ? JSON.parse(raw) : null;
+}
+
+/**
+ * Save User Profile and calculate personalized calorie goal & carbon budget
+ */
+export function saveUserProfile(profileData) {
+  const calculated = calculateProfileMetrics(profileData);
+  const fullProfile = {
+    ...profileData,
+    ...calculated,
+    updatedAt: new Date().toISOString()
+  };
+
+  localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(fullProfile));
+
+  // Update Settings with new goals
+  saveSettings({
+    dailyCalorieGoal: fullProfile.dailyCalorieGoal,
+    dailyCarbonBudget: fullProfile.dailyCarbonBudget,
+    userName: fullProfile.name
+  });
+
+  return fullProfile;
+}
+
+/**
+ * Calculate BMI, BMR, Daily Calorie Goal & Carbon Budget
+ */
+export function calculateProfileMetrics(profile) {
+  const weight = Number(profile.weight) || 70;
+  const height = Number(profile.height) || 170;
+  const age = Number(profile.age) || 25;
+  const gender = profile.gender || 'Other';
+  const activity = profile.activityLevel || 'Moderately Active';
+  const goal = profile.goal || 'Stay Healthy';
+
+  // 1. BMI Calculation
+  const heightM = height / 100;
+  const bmi = parseFloat((weight / (heightM * heightM)).toFixed(1));
+  let bmiCategory = 'Normal weight';
+  if (bmi < 18.5) bmiCategory = 'Underweight';
+  else if (bmi >= 25 && bmi < 29.9) bmiCategory = 'Overweight';
+  else if (bmi >= 30) bmiCategory = 'Obese';
+
+  // 2. BMR (Mifflin-St Jeor Equation)
+  let bmr = (10 * weight) + (6.25 * height) - (5 * age);
+  if (gender === 'Male') bmr += 5;
+  else if (gender === 'Female') bmr -= 161;
+  else bmr -= 78;
+
+  // 3. TDEE Activity Multipliers
+  const activityMultipliers = {
+    'Sedentary': 1.2,
+    'Lightly Active': 1.375,
+    'Moderately Active': 1.55,
+    'Very Active': 1.725,
+    'Athlete': 1.9
+  };
+  const mult = activityMultipliers[activity] || 1.55;
+  let tdee = bmr * mult;
+
+  // 4. Goal Adjustments
+  const goalAdjustments = {
+    'Lose Weight': -400,
+    'Stay Healthy': 0,
+    'Build Muscle': +350,
+    'Boost Performance': +400
+  };
+  const goalAdj = goalAdjustments[goal] || 0;
+  const dailyCalorieGoal = Math.round(Math.max(1200, tdee + goalAdj));
+
+  // 5. Daily Carbon Budget (standard baseline 3.5 kg CO2e)
+  const dailyCarbonBudget = 3.5;
+
+  return {
+    bmi,
+    bmiCategory,
+    bmr: Math.round(bmr),
+    tdee: Math.round(tdee),
+    dailyCalorieGoal,
+    dailyCarbonBudget
+  };
+}
+
+/**
+ * Get all grocery items from LocalStorage (with sample seed on first load)
+ */
+export function getGroceryItems() {
+  const raw = localStorage.getItem(STORAGE_KEYS.GROCERIES);
+  if (!raw) {
+    const sample = seedInitialGroceries();
+    localStorage.setItem(STORAGE_KEYS.GROCERIES, JSON.stringify(sample));
+    return sample;
+  }
+  return JSON.parse(raw);
+}
+
+/**
+ * Add a new grocery item
+ */
+export function addGroceryItem(itemData) {
+  const items = getGroceryItems();
+  const newItem = {
+    id: `groc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    name: itemData.name.trim(),
+    quantity: itemData.quantity ? itemData.quantity.trim() : '1',
+    purchased: false,
+    createdAt: new Date().toISOString()
+  };
+  items.unshift(newItem);
+  localStorage.setItem(STORAGE_KEYS.GROCERIES, JSON.stringify(items));
+  return newItem;
+}
+
+/**
+ * Toggle grocery item purchased status
+ */
+export function toggleGroceryDone(itemId) {
+  const items = getGroceryItems();
+  const item = items.find(i => i.id === itemId);
+  if (item) {
+    item.purchased = !item.purchased;
+    item.purchasedAt = item.purchased ? new Date().toISOString() : null;
+    localStorage.setItem(STORAGE_KEYS.GROCERIES, JSON.stringify(items));
+  }
+  return items;
+}
+
+/**
+ * Delete a grocery item
+ */
+export function deleteGroceryItem(itemId) {
+  const items = getGroceryItems();
+  const updated = items.filter(i => i.id !== itemId);
+  localStorage.setItem(STORAGE_KEYS.GROCERIES, JSON.stringify(updated));
+  return updated;
+}
+
+/**
+ * Clear all purchased grocery items
+ */
+export function clearPurchasedGroceries() {
+  const items = getGroceryItems();
+  const activeOnly = items.filter(i => !i.purchased);
+  localStorage.setItem(STORAGE_KEYS.GROCERIES, JSON.stringify(activeOnly));
+  return activeOnly;
+}
+
+function seedInitialGroceries() {
+  return [
+    { id: 'groc-1', name: 'Fresh Paneer', quantity: '200g', purchased: false, createdAt: new Date().toISOString() },
+    { id: 'groc-2', name: 'Brown Rice', quantity: '1 kg', purchased: false, createdAt: new Date().toISOString() },
+    { id: 'groc-3', name: 'Organic Spinach', quantity: '1 bunch', purchased: true, purchasedAt: new Date().toISOString(), createdAt: new Date().toISOString() }
+  ];
+}
 
 /**
  * Get all available foods from LocalStorage (or initial defaults)
@@ -177,8 +341,10 @@ export function saveSettings(newSettings) {
  */
 export function exportDataAsJSON() {
   const data = {
+    profile: getUserProfile(),
     meals: getMeals(),
     foods: getAvailableFoods(),
+    groceries: getGroceryItems(),
     settings: getSettings(),
     exportedAt: new Date().toISOString()
   };
@@ -191,6 +357,9 @@ export function exportDataAsJSON() {
 export function importDataFromJSON(jsonString) {
   try {
     const data = JSON.parse(jsonString);
+    if (data.profile) {
+      localStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify(data.profile));
+    }
     if (data.meals && Array.isArray(data.meals)) {
       localStorage.setItem(STORAGE_KEYS.MEALS, JSON.stringify(data.meals));
     }
@@ -198,6 +367,9 @@ export function importDataFromJSON(jsonString) {
       localStorage.setItem(STORAGE_KEYS.FOODS, JSON.stringify(data.foods));
     } else if (data.customFoods && Array.isArray(data.customFoods)) {
       localStorage.setItem(STORAGE_KEYS.FOODS, JSON.stringify([...INITIAL_FOOD_ITEMS, ...data.customFoods]));
+    }
+    if (data.groceries && Array.isArray(data.groceries)) {
+      localStorage.setItem(STORAGE_KEYS.GROCERIES, JSON.stringify(data.groceries));
     }
     if (data.settings) {
       localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(data.settings));

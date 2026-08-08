@@ -8,14 +8,14 @@
   <meta name="theme-color" content="#059669">
 
   <!-- PWA Web App Manifest & iOS Settings -->
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json?v=1.0.2">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="EcoTracker">
 
   <!-- Design System CSS -->
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css?v=1.0.2">
 
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -46,6 +46,12 @@
           </button>
           <button class="desktop-nav-btn" data-tab="tabDatabase">
             <i data-lucide="utensils"></i> Food Directory
+          </button>
+          <button class="desktop-nav-btn" data-tab="tabGroceries">
+            <i data-lucide="shopping-bag"></i> Groceries
+          </button>
+          <button class="desktop-nav-btn" data-tab="tabProfile">
+            <i data-lucide="user"></i> Profile
           </button>
         </nav>
       </div>
@@ -288,6 +294,168 @@
         </div>
       </section>
 
+      <!-- ===================================================================
+           TAB 4: GROCERY SHOPPING LIST
+           =================================================================== -->
+      <section class="tab-view" id="tabGroceries">
+        <div class="section-title">
+          <span>Grocery Shopping List 🛒</span>
+          <span style="font-size: 0.78rem; font-weight: 500; color: var(--text-muted);" id="grocerySummaryPill">0 active</span>
+        </div>
+
+        <!-- Add Grocery Form Card -->
+        <div class="grocery-add-card">
+          <form id="formAddGrocery" class="grocery-form-row">
+            <input type="text" class="form-input" id="inputGrocName" placeholder="Item name (e.g., Organic Oats)..." required style="flex: 2;">
+            <input type="text" class="form-input" id="inputGrocQty" placeholder="Qty (e.g., 200g, 1 kg)" style="flex: 1;">
+            <button type="submit" class="btn-primary-block" style="padding: 10px 16px; font-size: 0.88rem; width: auto; white-space: nowrap;">
+              + Add Item
+            </button>
+          </form>
+        </div>
+
+        <div class="groceries-desktop-grid">
+          <!-- Active Shopping List -->
+          <div>
+            <div class="grocery-section-header">
+              <span class="grocery-sec-title">To Buy</span>
+              <span class="grocery-badge active-badge" id="activeGrocCount">0 items</span>
+            </div>
+            <div class="grocery-list" id="activeGroceryContainer">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Purchased Items -->
+          <div>
+            <div class="grocery-section-header">
+              <span class="grocery-sec-title">Purchased Items</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="grocery-badge purchased-badge" id="purchasedGrocCount">0 items</span>
+                <button class="text-link-btn" id="btnClearPurchased">Clear All</button>
+              </div>
+            </div>
+            <div class="grocery-list" id="purchasedGroceryContainer">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           TAB 5: USER PROFILE VIEW
+           =================================================================== -->
+      <section class="tab-view" id="tabProfile">
+        <div class="section-title">
+          <span>My Profile 👤</span>
+          <button class="btn-secondary" style="padding: 6px 14px; font-size: 0.78rem;" id="btnEditProfile">
+            <i data-lucide="edit-3"></i> Edit Profile
+          </button>
+        </div>
+
+        <div class="profile-desktop-grid">
+          <!-- Left Column: User Header & Physical Metrics -->
+          <div>
+            <!-- Profile Hero Card -->
+            <div class="profile-hero-card">
+              <div class="profile-avatar-wrap" id="profileAvatarIcon">👤</div>
+              <div class="profile-hero-details">
+                <h2 class="profile-user-name" id="profDisplayName">User Name</h2>
+                <div class="profile-badges-row">
+                  <span class="prof-tag-pill" id="profTagDiet">Diet Type</span>
+                  <span class="prof-tag-pill" id="profTagActivity">Activity</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Body Metrics Card -->
+            <div class="profile-section-card">
+              <div class="card-subtitle">Body Metrics</div>
+              <div class="profile-metrics-grid">
+                <div class="metric-stat-box">
+                  <div class="stat-label">Age</div>
+                  <div class="stat-value" id="profValAge">--</div>
+                  <div class="stat-sub">years</div>
+                </div>
+                <div class="metric-stat-box">
+                  <div class="stat-label">Height</div>
+                  <div class="stat-value" id="profValHeight">--</div>
+                  <div class="stat-sub">cm</div>
+                </div>
+                <div class="metric-stat-box">
+                  <div class="stat-label">Weight</div>
+                  <div class="stat-value" id="profValWeight">--</div>
+                  <div class="stat-sub">kg</div>
+                </div>
+                <div class="metric-stat-box highlight-box">
+                  <div class="stat-label">BMI Score</div>
+                  <div class="stat-value" id="profValBMI">--</div>
+                  <div class="stat-sub" id="profValBMICat">Normal</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Goals, Budgets & Lifestyle -->
+          <div>
+            <!-- Personalized Goals Card -->
+            <div class="profile-section-card">
+              <div class="card-subtitle">Personalized Goals & Budgets</div>
+              <div class="profile-goals-list">
+                <div class="goal-item-row">
+                  <div class="goal-info">
+                    <span class="goal-icon">🔥</span>
+                    <div>
+                      <div class="goal-title">Daily Calorie Target</div>
+                      <div class="goal-desc">Based on BMR & TDEE calculation</div>
+                    </div>
+                  </div>
+                  <div class="goal-val-num" id="profValCalGoal">2,000 kcal</div>
+                </div>
+
+                <div class="goal-item-row">
+                  <div class="goal-info">
+                    <span class="goal-icon">🌱</span>
+                    <div>
+                      <div class="goal-title">Daily Carbon Budget</div>
+                      <div class="goal-desc">Target max CO₂e per day</div>
+                    </div>
+                  </div>
+                  <div class="goal-val-num" id="profValCarbonBudget">3.5 kg</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lifestyle Details Card -->
+            <div class="profile-section-card">
+              <div class="card-subtitle">Lifestyle & Preferences</div>
+              <div class="lifestyle-info-grid">
+                <div class="life-info-item">
+                  <span class="life-label">Gender:</span>
+                  <span class="life-value" id="profValGender">--</span>
+                </div>
+                <div class="life-info-item">
+                  <span class="life-label">Primary Goal:</span>
+                  <span class="life-value" id="profValGoal">--</span>
+                </div>
+                <div class="life-info-item">
+                  <span class="life-label">Activity Level:</span>
+                  <span class="life-value" id="profValActivity">--</span>
+                </div>
+                <div class="life-info-item">
+                  <span class="life-label">Diet Type:</span>
+                  <span class="life-value" id="profValDiet">--</span>
+                </div>
+                <div class="life-info-item full-width">
+                  <span class="life-label">Allergies:</span>
+                  <span class="life-value" id="profValAllergies">None</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
 
     <!-- Floating Action Button (FAB): Add Meal -->
@@ -312,6 +480,14 @@
       <button class="nav-item" data-tab="tabDatabase">
         <i data-lucide="utensils"></i>
         <span>Foods</span>
+      </button>
+      <button class="nav-item" data-tab="tabGroceries">
+        <i data-lucide="shopping-bag"></i>
+        <span>Groceries</span>
+      </button>
+      <button class="nav-item" data-tab="tabProfile">
+        <i data-lucide="user"></i>
+        <span>Profile</span>
       </button>
     </nav>
 
@@ -555,9 +731,112 @@
       </div>
     </div>
 
-  </div>
+    <!-- ===================================================================
+         MODAL: PROFILE SETUP / EDIT (FIRST TIME ONBOARDING & EDIT)
+         =================================================================== -->
+    <div class="modal-overlay" id="profileSetupModal">
+      <div class="modal-card profile-modal-card">
+        <div class="modal-title" id="profModalTitle">Welcome! Set Up Your Profile 👋</div>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px;" id="profModalDesc">
+          Tell us about yourself to personalize your daily calorie targets and carbon budgets.
+        </p>
+
+        <form id="formProfileSetup">
+          <!-- Name Input -->
+          <div class="form-field" style="margin-bottom: 12px;">
+            <label class="form-label" for="psName">Your Name *</label>
+            <input type="text" class="form-input" id="psName" placeholder="e.g. Alex Smith" required>
+          </div>
+
+          <!-- Age, Height, Weight Inputs -->
+          <div class="form-group-row" style="margin-bottom: 14px;">
+            <div class="form-field">
+              <label class="form-label" for="psAge">Age *</label>
+              <input type="number" class="form-input" id="psAge" placeholder="25" min="10" max="120" required>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="psHeight">Height (cm) *</label>
+              <input type="number" class="form-input" id="psHeight" placeholder="170" min="50" max="250" required>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="psWeight">Weight (kg) *</label>
+              <input type="number" step="0.1" class="form-input" id="psWeight" placeholder="68" min="20" max="300" required>
+            </div>
+          </div>
+
+          <!-- Gender Selectable Pills -->
+          <div class="form-field" style="margin-bottom: 14px;">
+            <label class="form-label">Gender</label>
+            <div class="pill-options-group" id="groupGender">
+              <button type="button" class="pill-option active" data-val="Female">Female 👩</button>
+              <button type="button" class="pill-option" data-val="Male">Male 👨</button>
+              <button type="button" class="pill-option" data-val="Other">Other 🧑</button>
+            </div>
+          </div>
+
+          <!-- Activity Level Selectable Pills -->
+          <div class="form-field" style="margin-bottom: 14px;">
+            <label class="form-label">Activity Level</label>
+            <div class="pill-options-group vertical-stack" id="groupActivity">
+              <button type="button" class="pill-option" data-val="Sedentary">
+                <strong>Sedentary</strong> <span>(Little or no exercise)</span>
+              </button>
+              <button type="button" class="pill-option active" data-val="Lightly Active">
+                <strong>Lightly Active</strong> <span>(1-3 days/wk)</span>
+              </button>
+              <button type="button" class="pill-option" data-val="Moderately Active">
+                <strong>Moderately Active</strong> <span>(3-5 days/wk)</span>
+              </button>
+              <button type="button" class="pill-option" data-val="Very Active">
+                <strong>Very Active</strong> <span>(6-7 days/wk)</span>
+              </button>
+              <button type="button" class="pill-option" data-val="Athlete">
+                <strong>Athlete</strong> <span>(2x per day)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Goal Selectable Pills -->
+          <div class="form-field" style="margin-bottom: 14px;">
+            <label class="form-label">Primary Goal</label>
+            <div class="pill-options-group grid-2col" id="groupGoal">
+              <button type="button" class="pill-option" data-val="Lose Weight">🔥 Lose Weight</button>
+              <button type="button" class="pill-option active" data-val="Stay Healthy">🌿 Stay Healthy</button>
+              <button type="button" class="pill-option" data-val="Build Muscle">💪 Build Muscle</button>
+              <button type="button" class="pill-option" data-val="Boost Performance">⚡ Boost Performance</button>
+            </div>
+          </div>
+
+          <!-- Diet Type Selectable Pills -->
+          <div class="form-field" style="margin-bottom: 14px;">
+            <label class="form-label">Diet Type</label>
+            <div class="pill-options-group grid-2col" id="groupDiet">
+              <button type="button" class="pill-option active" data-val="Vegetarian">🥗 Vegetarian</button>
+              <button type="button" class="pill-option" data-val="Vegan">🌱 Vegan</button>
+              <button type="button" class="pill-option" data-val="Eggetarian">🍳 Eggetarian</button>
+              <button type="button" class="pill-option" data-val="Non-Vegetarian">🍗 Non-Vegetarian</button>
+            </div>
+          </div>
+
+          <!-- Allergies Input -->
+          <div class="form-field" style="margin-bottom: 18px;">
+            <label class="form-label" for="psAllergies">Allergies (comma separated)</label>
+            <input type="text" class="form-input" id="psAllergies" placeholder="e.g. Peanuts, Dairy, Shellfish">
+          </div>
+
+          <!-- Submit Button -->
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn-secondary" id="btnCloseProfileModal" style="display: none; flex: 1;">Cancel</button>
+            <button type="submit" class="btn-primary-block" style="flex: 2;">Save Profile 🌱</button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+  </div><!-- end .app-container -->
 
   <!-- JavaScript Modules -->
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=1.0.2"></script>
 </body>
 </html>

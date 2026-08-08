@@ -1,4 +1,4 @@
-import { getEcoGrade } from './foodData.js';
+import { getEcoGrade } from './foodData.js?v=1.0.2';
 import { 
   getAvailableFoods, 
   getMeals, 
@@ -8,11 +8,18 @@ import {
   saveCustomFood,
   updateFoodItem,
   deleteFoodItem,
+  getGroceryItems,
+  addGroceryItem,
+  toggleGroceryDone,
+  deleteGroceryItem,
+  clearPurchasedGroceries,
+  getUserProfile,
+  saveUserProfile,
   exportDataAsJSON, 
   importDataFromJSON 
-} from './storage.js';
-import { renderTrendChart, renderCategoryBreakdown, renderMacroBreakdown } from './charts.js';
-import { renderAchievementsSection, evaluateAchievements } from './achievements.js';
+} from './storage.js?v=1.0.2';
+import { renderTrendChart, renderCategoryBreakdown, renderMacroBreakdown } from './charts.js?v=1.0.2';
+import { renderAchievementsSection, evaluateAchievements } from './achievements.js?v=1.0.2';
 
 // State Management
 let state = {
@@ -51,6 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
   initLucideIcons();
   setupEventListeners();
   setDefaultDateTimeInput();
+
+  // First time user profile check
+  const profile = getUserProfile();
+  if (!profile) {
+    openProfileSetupModal(true);
+  }
+
   renderCurrentView();
 });
 
@@ -183,6 +197,86 @@ function setupEventListeners() {
   const importFileInput = document.getElementById('fileImportInput');
   document.getElementById('btnImportJSON').addEventListener('click', () => importFileInput.click());
   importFileInput.addEventListener('change', handleImportData);
+
+  // Grocery Form Submit & Clear
+  const formAddGrocery = document.getElementById('formAddGrocery');
+  if (formAddGrocery) {
+    formAddGrocery.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const nameInput = document.getElementById('inputGrocName');
+      const qtyInput = document.getElementById('inputGrocQty');
+
+      const name = nameInput.value.trim();
+      const qty = qtyInput.value.trim();
+
+      if (!name) return;
+
+      addGroceryItem({ name, quantity: qty });
+      nameInput.value = '';
+      qtyInput.value = '';
+      showToast('Grocery item added 🛒');
+      renderGroceriesView();
+    });
+  }
+
+  const btnClearPurchased = document.getElementById('btnClearPurchased');
+  if (btnClearPurchased) {
+    btnClearPurchased.addEventListener('click', () => {
+      clearPurchasedGroceries();
+      showToast('Purchased items cleared');
+      renderGroceriesView();
+    });
+  }
+
+  // Profile Modal Selectable Pill Buttons Listener
+  document.querySelectorAll('.pill-options-group').forEach(group => {
+    group.querySelectorAll('.pill-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        group.querySelectorAll('.pill-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  });
+
+  // Profile Setup Form Submit
+  const formProfileSetup = document.getElementById('formProfileSetup');
+  if (formProfileSetup) {
+    formProfileSetup.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('psName').value.trim();
+      const age = document.getElementById('psAge').value;
+      const height = document.getElementById('psHeight').value;
+      const weight = document.getElementById('psWeight').value;
+
+      const gender = document.querySelector('#groupGender .pill-option.active')?.getAttribute('data-val') || 'Female';
+      const activityLevel = document.querySelector('#groupActivity .pill-option.active')?.getAttribute('data-val') || 'Lightly Active';
+      const goal = document.querySelector('#groupGoal .pill-option.active')?.getAttribute('data-val') || 'Stay Healthy';
+      const dietType = document.querySelector('#groupDiet .pill-option.active')?.getAttribute('data-val') || 'Vegetarian';
+      const allergies = document.getElementById('psAllergies').value.trim();
+
+      if (!name || !age || !height || !weight) {
+        showToast('Please fill in Name, Age, Height, and Weight');
+        return;
+      }
+
+      saveUserProfile({
+        name, age, height, weight, gender, activityLevel, goal, dietType, allergies
+      });
+
+      document.getElementById('profileSetupModal').classList.remove('open');
+      showToast('Profile Saved! 🌱');
+      renderCurrentView();
+    });
+  }
+
+  // Edit Profile Button
+  document.getElementById('btnEditProfile')?.addEventListener('click', () => {
+    openProfileSetupModal(false);
+  });
+
+  document.getElementById('btnCloseProfileModal')?.addEventListener('click', () => {
+    document.getElementById('profileSetupModal').classList.remove('open');
+  });
 }
 
 /**
@@ -210,6 +304,8 @@ function renderCurrentView() {
   if (state.currentTab === 'tabHome') renderHomeDashboard();
   if (state.currentTab === 'tabReports') renderReportsView();
   if (state.currentTab === 'tabDatabase') renderDatabaseView();
+  if (state.currentTab === 'tabGroceries') renderGroceriesView();
+  if (state.currentTab === 'tabProfile') renderProfileView();
 }
 
 /**
@@ -245,6 +341,9 @@ function renderHomeDashboard() {
 
   document.getElementById('valCalorieToday').textContent = Math.round(totalCal);
   document.getElementById('valCarbonToday').textContent = totalCo2.toFixed(1);
+
+  document.getElementById('targetCalorieLabel').textContent = `Goal: ${settings.dailyCalorieGoal.toLocaleString()} kcal`;
+  document.getElementById('targetCarbonLabel').textContent = `Budget: ${settings.dailyCarbonBudget} kg`;
 
   // Render Daily Macronutrient Summary Card
   renderMacroBreakdown(document.getElementById('homeMacroContainer'), {
@@ -867,4 +966,171 @@ function showToast(message) {
   setTimeout(() => {
     toast.classList.remove('show');
   }, 2400);
+}
+
+/**
+ * Render Grocery Shopping List View
+ */
+function renderGroceriesView() {
+  const items = getGroceryItems();
+
+  const activeItems = items.filter(i => !i.purchased);
+  const purchasedItems = items.filter(i => i.purchased);
+
+  // Update summary badges
+  const summaryPill = document.getElementById('grocerySummaryPill');
+  const activeCount = document.getElementById('activeGrocCount');
+  const purchasedCount = document.getElementById('purchasedGrocCount');
+
+  if (summaryPill) summaryPill.textContent = `${activeItems.length} active`;
+  if (activeCount) activeCount.textContent = `${activeItems.length} items`;
+  if (purchasedCount) purchasedCount.textContent = `${purchasedItems.length} items`;
+
+  const activeContainer = document.getElementById('activeGroceryContainer');
+  const purchasedContainer = document.getElementById('purchasedGroceryContainer');
+
+  if (!activeContainer || !purchasedContainer) return;
+
+  activeContainer.innerHTML = '';
+  purchasedContainer.innerHTML = '';
+
+  // Render Active Items
+  if (activeItems.length === 0) {
+    activeContainer.innerHTML = `
+      <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+        <div style="font-size: 1.5rem; margin-bottom: 4px;">🎉</div>
+        <div style="font-weight: 600; font-size: 0.9rem;">Your shopping list is clear!</div>
+        <div style="font-size: 0.75rem; color: var(--text-light); margin-top: 2px;">Add items above to start your list.</div>
+      </div>
+    `;
+  } else {
+    activeItems.forEach(item => {
+      const card = createGroceryItemCard(item);
+      activeContainer.appendChild(card);
+    });
+  }
+
+  // Render Purchased Items
+  if (purchasedItems.length === 0) {
+    purchasedContainer.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: var(--text-light); font-size: 0.8rem;">
+        No purchased items yet. Click "Done" on an item when bought.
+      </div>
+    `;
+  } else {
+    purchasedItems.forEach(item => {
+      const card = createGroceryItemCard(item);
+      purchasedContainer.appendChild(card);
+    });
+  }
+}
+
+/**
+ * Helper to create a single Grocery Item Card DOM Element
+ */
+function createGroceryItemCard(item) {
+  const card = document.createElement('div');
+  card.className = `grocery-item-card ${item.purchased ? 'purchased' : ''}`;
+
+  card.innerHTML = `
+    <div class="grocery-item-left">
+      <div class="grocery-item-title">${item.name}</div>
+      ${item.quantity ? `<span class="grocery-item-qty">${item.quantity}</span>` : ''}
+    </div>
+    <div class="grocery-item-actions">
+      <button class="btn-done-item ${item.purchased ? 'done-active' : ''}" data-id="${item.id}">
+        ${item.purchased ? '✓ Purchased' : '✓ Done'}
+      </button>
+      <button class="food-action-btn delete-btn btn-del-groc" data-id="${item.id}" title="Delete item">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </button>
+    </div>
+  `;
+
+  // Toggle Done Button Listener
+  card.querySelector('.btn-done-item').addEventListener('click', () => {
+    toggleGroceryDone(item.id);
+    showToast(item.purchased ? 'Moved back to shopping list' : 'Moved to Purchased! ✓');
+    renderGroceriesView();
+  });
+
+  // Delete Button Listener
+  card.querySelector('.btn-del-groc').addEventListener('click', () => {
+    deleteGroceryItem(item.id);
+    showToast('Grocery item deleted');
+    renderGroceriesView();
+  });
+
+  return card;
+}
+
+/**
+ * Open Profile Setup Modal and pre-fill if editing
+ */
+function openProfileSetupModal(isFirstTime = false) {
+  const profile = getUserProfile();
+  const cancelBtn = document.getElementById('btnCloseProfileModal');
+  const title = document.getElementById('profModalTitle');
+  const desc = document.getElementById('profModalDesc');
+
+  if (isFirstTime) {
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    if (title) title.textContent = 'Welcome! Set Up Your Profile 👋';
+    if (desc) desc.textContent = 'Tell us about yourself to personalize your daily calorie targets and carbon budgets.';
+  } else {
+    if (cancelBtn) cancelBtn.style.display = 'block';
+    if (title) title.textContent = 'Edit Profile ✏️';
+    if (desc) desc.textContent = 'Update your physical metrics, activity level, or health goals.';
+  }
+
+  if (profile) {
+    document.getElementById('psName').value = profile.name || '';
+    document.getElementById('psAge').value = profile.age || '';
+    document.getElementById('psHeight').value = profile.height || '';
+    document.getElementById('psWeight').value = profile.weight || '';
+    document.getElementById('psAllergies').value = profile.allergies || '';
+
+    selectPillOption('#groupGender', profile.gender || 'Female');
+    selectPillOption('#groupActivity', profile.activityLevel || 'Lightly Active');
+    selectPillOption('#groupGoal', profile.goal || 'Stay Healthy');
+    selectPillOption('#groupDiet', profile.dietType || 'Vegetarian');
+  }
+
+  document.getElementById('profileSetupModal').classList.add('open');
+}
+
+function selectPillOption(groupSelector, value) {
+  const group = document.querySelector(groupSelector);
+  if (!group) return;
+  group.querySelectorAll('.pill-option').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-val') === value);
+  });
+}
+
+/**
+ * Render Profile View Screen
+ */
+function renderProfileView() {
+  const profile = getUserProfile();
+  if (!profile) return;
+
+  document.getElementById('profDisplayName').textContent = profile.name;
+  document.getElementById('profTagDiet').textContent = profile.dietType || 'Vegetarian';
+  document.getElementById('profTagActivity').textContent = profile.activityLevel || 'Active';
+
+  document.getElementById('profValAge').textContent = profile.age || '--';
+  document.getElementById('profValHeight').textContent = profile.height || '--';
+  document.getElementById('profValWeight').textContent = profile.weight || '--';
+
+  document.getElementById('profValBMI').textContent = profile.bmi || '--';
+  document.getElementById('profValBMICat').textContent = profile.bmiCategory || 'Normal';
+
+  document.getElementById('profValCalGoal').textContent = `${profile.dailyCalorieGoal ? profile.dailyCalorieGoal.toLocaleString() : 2000} kcal`;
+  document.getElementById('profValCarbonBudget').textContent = `${profile.dailyCarbonBudget || 3.5} kg`;
+
+  document.getElementById('profValGender').textContent = profile.gender || 'Other';
+  document.getElementById('profValGoal').textContent = profile.goal || 'Stay Healthy';
+  document.getElementById('profValActivity').textContent = profile.activityLevel || 'Lightly Active';
+  document.getElementById('profValDiet').textContent = profile.dietType || 'Vegetarian';
+  document.getElementById('profValAllergies').textContent = profile.allergies && profile.allergies.trim() ? profile.allergies : 'None reported';
 }
