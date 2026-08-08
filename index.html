@@ -7,6 +7,13 @@
   <meta name="description" content="Track daily calories and carbon footprint (CO2 emissions) of your meals with browser local storage.">
   <meta name="theme-color" content="#059669">
 
+  <!-- PWA Web App Manifest & iOS Settings -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EcoTracker">
+
   <!-- Design System CSS -->
   <link rel="stylesheet" href="css/styles.css">
 
@@ -40,13 +47,20 @@
           <button class="desktop-nav-btn" data-tab="tabDatabase">
             <i data-lucide="utensils"></i> Food Directory
           </button>
-          <button class="desktop-nav-btn desktop-add-btn" id="btnDesktopAddMeal">
-            <i data-lucide="plus"></i> Add Meal
-          </button>
         </nav>
       </div>
 
       <div class="header-actions">
+        <!-- Install App PWA Trigger Button -->
+        <button class="install-pwa-btn" id="btnInstallPWA" style="display: none;">
+          📱 Install App
+        </button>
+
+        <!-- Add Meal Button (always visible in header) -->
+        <button class="header-add-meal-btn" id="btnDesktopAddMeal">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Meal
+        </button>
         <button class="icon-btn" id="btnExportData" title="Export Backup JSON">
           <i data-lucide="download"></i>
         </button>
@@ -391,7 +405,7 @@
         <div class="modal-title">Add Custom Food Item</div>
         
         <div class="form-field" style="margin-bottom: 10px;">
-          <label class="form-label">Food Name</label>
+          <label class="form-label">Food Name *</label>
           <input type="text" class="form-input" id="cfName" placeholder="e.g. Oats Porridge">
         </div>
 
@@ -415,14 +429,14 @@
             </select>
           </div>
           <div class="form-field">
-            <label class="form-label">Calories (kcal)</label>
+            <label class="form-label">Calories (kcal) *</label>
             <input type="number" class="form-input" id="cfCalories" placeholder="250">
           </div>
         </div>
 
         <div class="form-group-row">
           <div class="form-field">
-            <label class="form-label">CO₂ Footprint (kg CO₂e)</label>
+            <label class="form-label">CO₂ Footprint (kg CO₂e) *</label>
             <input type="number" step="0.01" class="form-input" id="cfCarbon" placeholder="0.35">
           </div>
           <div class="form-field">
@@ -431,9 +445,111 @@
           </div>
         </div>
 
+        <!-- Macronutrients Inputs -->
+        <div class="form-group-row">
+          <div class="form-field">
+            <label class="form-label">Carbohydrates (g)</label>
+            <input type="number" step="0.1" class="form-input" id="cfCarbs" placeholder="45">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Protein (g)</label>
+            <input type="number" step="0.1" class="form-input" id="cfProtein" placeholder="8">
+          </div>
+        </div>
+
+        <div class="form-group-row">
+          <div class="form-field">
+            <label class="form-label">Fats (g)</label>
+            <input type="number" step="0.1" class="form-input" id="cfFat" placeholder="5">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Dietary Fiber (g)</label>
+            <input type="number" step="0.1" class="form-input" id="cfFiber" placeholder="3">
+          </div>
+        </div>
+
         <div style="display: flex; gap: 10px; margin-top: 14px;">
           <button class="btn-secondary" style="flex: 1;" id="btnCloseCustomFoodModal">Cancel</button>
           <button class="btn-primary-block" style="flex: 1;" id="btnSaveCustomFood">Add Item</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===================================================================
+         MODAL: EDIT FOOD ITEM
+         =================================================================== -->
+    <div class="modal-overlay" id="editFoodModal">
+      <div class="modal-card">
+        <div class="modal-title">Edit Food Item</div>
+        <input type="hidden" id="efId">
+        
+        <div class="form-field" style="margin-bottom: 10px;">
+          <label class="form-label">Food Name *</label>
+          <input type="text" class="form-input" id="efName">
+        </div>
+
+        <div class="form-group-row">
+          <div class="form-field">
+            <label class="form-label">Category</label>
+            <select class="form-select" id="efCategory">
+              <option value="Breakfast">Breakfast</option>
+              <option value="Rice">Rice</option>
+              <option value="Dal">Dal</option>
+              <option value="Paneer">Paneer</option>
+              <option value="Vegetable">Vegetable</option>
+              <option value="Bread">Bread</option>
+              <option value="South Indian">South Indian</option>
+              <option value="Non-Veg">Non-Veg</option>
+              <option value="Dairy">Dairy</option>
+              <option value="Dessert">Dessert</option>
+              <option value="Snack">Snack</option>
+              <option value="Street Food">Street Food</option>
+              <option value="Custom">Custom</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Calories (kcal) *</label>
+            <input type="number" class="form-input" id="efCalories">
+          </div>
+        </div>
+
+        <div class="form-group-row">
+          <div class="form-field">
+            <label class="form-label">CO₂ Footprint (kg CO₂e) *</label>
+            <input type="number" step="0.01" class="form-input" id="efCarbon">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Unit Description</label>
+            <input type="text" class="form-input" id="efUnit">
+          </div>
+        </div>
+
+        <div class="form-group-row">
+          <div class="form-field">
+            <label class="form-label">Carbohydrates (g)</label>
+            <input type="number" step="0.1" class="form-input" id="efCarbs">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Protein (g)</label>
+            <input type="number" step="0.1" class="form-input" id="efProtein">
+          </div>
+        </div>
+
+        <div class="form-group-row">
+          <div class="form-field">
+            <label class="form-label">Fats (g)</label>
+            <input type="number" step="0.1" class="form-input" id="efFat">
+          </div>
+          <div class="form-field">
+            <label class="form-label">Dietary Fiber (g)</label>
+            <input type="number" step="0.1" class="form-input" id="efFiber">
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 14px;">
+          <button class="btn-secondary" style="flex: 1;" id="btnCloseEditFoodModal">Cancel</button>
+          <button class="btn-primary-block" style="flex: 1;" id="btnSaveEditFood">Save Changes</button>
         </div>
 
       </div>

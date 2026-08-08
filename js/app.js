@@ -5,7 +5,9 @@ import {
   saveMeal, 
   deleteMeal, 
   getSettings, 
-  saveCustomFood, 
+  saveCustomFood,
+  updateFoodItem,
+  deleteFoodItem,
   exportDataAsJSON, 
   importDataFromJSON 
 } from './storage.js';
@@ -22,6 +24,26 @@ let state = {
   reportsPeriod: 'daily', // 'daily' | 'weekly'
   availableFoods: []
 };
+
+// PWA Install Prompt Deferred Event
+let deferredInstallPrompt = null;
+
+// Register Service Worker for Offline PWA support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('[PWA] Service Worker registered:', reg.scope))
+      .catch(err => console.warn('[PWA] Service Worker registration failed:', err));
+  });
+}
+
+// Capture PWA Install Prompt Event
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById('btnInstallPWA');
+  if (btn) btn.style.display = 'flex';
+});
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
@@ -63,6 +85,19 @@ function setupEventListeners() {
   });
 
   document.getElementById('btnDesktopAddMeal')?.addEventListener('click', openAddMealDrawer);
+
+  // PWA Install App Button
+  document.getElementById('btnInstallPWA')?.addEventListener('click', async () => {
+    if (deferredInstallPrompt) {
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      if (outcome === 'accepted') {
+        showToast('EcoTracker Installed! 🎉');
+      }
+      deferredInstallPrompt = null;
+      document.getElementById('btnInstallPWA').style.display = 'none';
+    }
+  });
 
   // FAB Add Meal Trigger
   document.getElementById('fabAddMeal').addEventListener('click', openAddMealDrawer);
@@ -133,6 +168,13 @@ function setupEventListeners() {
   });
 
   document.getElementById('btnSaveCustomFood').addEventListener('click', handleSaveCustomFood);
+
+  // Edit Food Modal
+  document.getElementById('btnCloseEditFoodModal').addEventListener('click', () => {
+    document.getElementById('editFoodModal').classList.remove('open');
+  });
+
+  document.getElementById('btnSaveEditFood').addEventListener('click', handleSaveEditFood);
 
   // Data Export & Import
   document.getElementById('btnExportData').addEventListener('click', handleExportData);
@@ -611,33 +653,122 @@ function renderDatabaseView() {
 
   container.innerHTML = '';
 
+  if (filtered.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:30px;color:var(--text-muted);">No foods found matching your search.</div>`;
+    return;
+  }
+
   filtered.forEach(food => {
     const grade = getEcoGrade(food.carbonFootprint);
     const card = document.createElement('div');
-    card.className = 'food-select-card';
+    card.className = 'food-dir-card';
 
     card.innerHTML = `
-      <div class="food-info-left">
-        <div class="food-title">${food.name} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(${food.category})</span></div>
-        <div class="food-meta">
-          <span>${food.calories} kcal</span> • 
-          <span>${food.carbonFootprint} kg CO₂</span>
-          <span class="eco-badge ${grade.class}">${grade.grade} - ${grade.label}</span>
-        </div>
-        <div class="food-macros-line">
-          <span class="macro-pill-inline">🌾 C: ${food.carbs || 0}g</span>
-          <span class="macro-pill-inline">🍗 P: ${food.protein || 0}g</span>
-          <span class="macro-pill-inline">🥑 F: ${food.fat || 0}g</span>
-          <span class="macro-pill-inline">🌿 Fib: ${food.fiber || 0}g</span>
-        </div>
+      <!-- Top-right Edit & Delete Actions -->
+      <div class="food-dir-actions">
+        <button class="food-action-btn edit-btn" data-food-id="${food.id}" title="Edit food">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="food-action-btn delete-btn" data-food-id="${food.id}" title="Delete food">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
       </div>
-      <div style="font-size: 0.72rem; color: var(--text-light); text-align: right;">
-        ${food.unit}
+
+      <!-- Left: All nutritional info -->
+      <div class="food-info-left" style="padding-right: 68px;">
+        <!-- Name & Category -->
+        <div class="food-title" style="margin-bottom: 4px;">
+          ${food.name}
+          <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500; margin-left: 4px;">${food.category}</span>
+        </div>
+
+        <!-- Calories & CO2 row -->
+        <div class="food-meta" style="margin-bottom: 4px;">
+          <span style="font-weight: 600; color: var(--calorie-color);">${food.calories} kcal</span>
+          <span style="color: var(--text-light); margin: 0 4px;">•</span>
+          <span style="font-weight: 600; color: var(--carbon-color);">${food.carbonFootprint} kg CO₂e</span>
+        </div>
+
+        <!-- Unit description + Eco badge on the same line -->
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span style="font-size: 0.7rem; color: var(--text-muted);">${food.unit}</span>
+          <span class="eco-badge ${grade.class}">${grade.grade} · ${grade.label}</span>
+        </div>
+
+        <!-- Macronutrient pills -->
+        <div class="food-macros-line">
+          <span class="macro-pill-inline" style="color:#3b82f6;">🌾 Carbs: ${food.carbs || 0}g</span>
+          <span class="macro-pill-inline" style="color:#ef4444;">🍗 Protein: ${food.protein || 0}g</span>
+          <span class="macro-pill-inline" style="color:#f59e0b;">🥑 Fat: ${food.fat || 0}g</span>
+          <span class="macro-pill-inline" style="color:#10b981;">🌿 Fiber: ${food.fiber || 0}g</span>
+        </div>
       </div>
     `;
 
+    // Edit button
+    card.querySelector('.edit-btn').addEventListener('click', () => openEditFoodModal(food));
+
+    // Delete button
+    card.querySelector('.delete-btn').addEventListener('click', () => {
+      if (confirm(`Delete "${food.name}" from the directory?`)) {
+        deleteFoodItem(food.id);
+        state.availableFoods = getAvailableFoods();
+        showToast(`"${food.name}" deleted ✓`);
+        renderDatabaseView();
+      }
+    });
+
     container.appendChild(card);
   });
+}
+
+/**
+ * Open Edit Food Modal and pre-fill values
+ */
+function openEditFoodModal(food) {
+  document.getElementById('efId').value = food.id;
+  document.getElementById('efName').value = food.name;
+  document.getElementById('efCategory').value = food.category;
+  document.getElementById('efCalories').value = food.calories;
+  document.getElementById('efCarbon').value = food.carbonFootprint;
+  document.getElementById('efUnit').value = food.unit || '';
+  document.getElementById('efCarbs').value = food.carbs || 0;
+  document.getElementById('efProtein').value = food.protein || 0;
+  document.getElementById('efFat').value = food.fat || 0;
+  document.getElementById('efFiber').value = food.fiber || 0;
+  document.getElementById('editFoodModal').classList.add('open');
+}
+
+/**
+ * Save edited food item
+ */
+function handleSaveEditFood() {
+  const id = document.getElementById('efId').value;
+  const name = document.getElementById('efName').value.trim();
+  const calories = document.getElementById('efCalories').value;
+  const carbon = document.getElementById('efCarbon').value;
+
+  if (!name || !calories || !carbon) {
+    showToast('Please fill in Name, Calories, and CO₂');
+    return;
+  }
+
+  updateFoodItem(id, {
+    name,
+    category: document.getElementById('efCategory').value,
+    calories,
+    carbonFootprint: carbon,
+    unit: document.getElementById('efUnit').value,
+    carbs: document.getElementById('efCarbs').value || 0,
+    protein: document.getElementById('efProtein').value || 0,
+    fat: document.getElementById('efFat').value || 0,
+    fiber: document.getElementById('efFiber').value || 0
+  });
+
+  state.availableFoods = getAvailableFoods();
+  document.getElementById('editFoodModal').classList.remove('open');
+  showToast('Food item updated! ✅');
+  renderDatabaseView();
 }
 
 /**
@@ -650,6 +781,11 @@ function handleSaveCustomFood() {
   const carbon = document.getElementById('cfCarbon').value;
   const unit = document.getElementById('cfUnit').value.trim();
 
+  const carbs = document.getElementById('cfCarbs').value;
+  const protein = document.getElementById('cfProtein').value;
+  const fat = document.getElementById('cfFat').value;
+  const fiber = document.getElementById('cfFiber').value;
+
   if (!name || !calories || !carbon) {
     showToast('Please fill in Name, Calories, and CO₂');
     return;
@@ -660,8 +796,22 @@ function handleSaveCustomFood() {
     category,
     calories,
     carbonFootprint: carbon,
+    carbs: carbs || 0,
+    protein: protein || 0,
+    fat: fat || 0,
+    fiber: fiber || 0,
     unit: unit || 'kg CO2e per serving'
   });
+
+  // Reset form inputs
+  document.getElementById('cfName').value = '';
+  document.getElementById('cfCalories').value = '';
+  document.getElementById('cfCarbon').value = '';
+  document.getElementById('cfUnit').value = '';
+  document.getElementById('cfCarbs').value = '';
+  document.getElementById('cfProtein').value = '';
+  document.getElementById('cfFat').value = '';
+  document.getElementById('cfFiber').value = '';
 
   state.availableFoods = getAvailableFoods();
   document.getElementById('customFoodModal').classList.remove('open');
