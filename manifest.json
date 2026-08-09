@@ -1,11 +1,11 @@
 {
-  "name": "EcoTracker - Meal & Carbon Footprint",
-  "short_name": "EcoTracker",
+  "name": "Annam - Meal & Carbon Tracker",
+  "short_name": "Annam",
   "description": "Track daily calories and carbon footprint (CO2 emissions) of your meals with browser local storage and offline access.",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#0f172a",
+  "background_color": "#f8fafc",
   "theme_color": "#059669",
   "icons": [
     {

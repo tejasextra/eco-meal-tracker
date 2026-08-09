@@ -1,14 +1,14 @@
-const CACHE_NAME = 'ecotracker-v1.0.7';
+const CACHE_NAME = 'annam-v1.0.8';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './css/styles.css?v=1.0.7',
-  './js/app.js?v=1.0.7',
-  './js/storage.js?v=1.0.7',
-  './js/foodData.js?v=1.0.7',
-  './js/charts.js?v=1.0.7',
-  './js/achievements.js?v=1.0.7',
-  './manifest.json?v=1.0.7',
+  './css/styles.css?v=1.0.8',
+  './js/app.js?v=1.0.8',
+  './js/storage.js?v=1.0.8',
+  './js/foodData.js?v=1.0.8',
+  './js/charts.js?v=1.0.8',
+  './js/achievements.js?v=1.0.8',
+  './manifest.json?v=1.0.8',
   './icons/icon-192.png',
   './icons/icon-512.png',
   'https://unpkg.com/lucide@latest',
@@ -19,7 +19,7 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (evt) => {
   evt.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Pre-caching offline assets v1.0.6');
+      console.log('[ServiceWorker] Pre-caching offline assets v1.0.8');
       return cache.addAll(ASSETS_TO_CACHE).catch(err => {
         console.warn('[ServiceWorker] Pre-cache partial warning:', err);
       });
@@ -77,6 +77,3 @@ self.addEventListener('fetch', (evt) => {
     })
   );
 });
-
-
-

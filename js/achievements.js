@@ -1,4 +1,4 @@
-import { getMeals, getSettings } from './storage.js?v=1.0.7';
+import { getMeals, getSettings } from './storage.js?v=1.0.8';
 
 const ACHIEVEMENTS_STORAGE_KEY = 'eco_tracker_achievements_v1';
 
