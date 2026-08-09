@@ -8,14 +8,14 @@
   <meta name="theme-color" content="#059669">
 
   <!-- PWA Web App Manifest & iOS Settings -->
-  <link rel="manifest" href="manifest.json?v=1.0.2">
+  <link rel="manifest" href="manifest.json?v=1.0.5">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="EcoTracker">
 
   <!-- Design System CSS -->
-  <link rel="stylesheet" href="css/styles.css?v=1.0.2">
+  <link rel="stylesheet" href="css/styles.css?v=1.0.5">
 
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -469,10 +469,6 @@
         <i data-lucide="home"></i>
         <span>Home</span>
       </button>
-      <button class="nav-item" data-tab="tabAddMealTrigger">
-        <i data-lucide="plus-circle"></i>
-        <span>Add Meal</span>
-      </button>
       <button class="nav-item" data-tab="tabReports">
         <i data-lucide="bar-chart-3"></i>
         <span>Reports</span>
@@ -830,13 +826,65 @@
             <button type="submit" class="btn-primary-block" style="flex: 2;">Save Profile 🌱</button>
           </div>
         </form>
+      </div>
+    </div>
 
+    <!-- ===================================================================
+         MODAL: ADD CUSTOM ACHIEVEMENT
+         =================================================================== -->
+    <div class="modal-overlay" id="customAchievementModal">
+      <div class="modal-card">
+        <div class="modal-title">Add Custom Achievement 🏆</div>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px;">
+          Create a personal goal or milestone badge for yourself!
+        </p>
+
+        <form id="formCustomAchievement">
+          <div class="form-field" style="margin-bottom: 12px;">
+            <label class="form-label" for="caTitle">Achievement Title *</label>
+            <input type="text" class="form-input" id="caTitle" placeholder="e.g., 7-Day Water Streak, Zero Meat Weekend" required>
+          </div>
+
+          <div class="form-field" style="margin-bottom: 12px;">
+            <label class="form-label" for="caDesc">Description</label>
+            <input type="text" class="form-input" id="caDesc" placeholder="e.g., Drank 2L water & ate low CO₂ meals all weekend">
+          </div>
+
+          <div class="form-group-row" style="margin-bottom: 14px;">
+            <div class="form-field" style="flex: 1;">
+              <label class="form-label" for="caIcon">Badge Emoji</label>
+              <select class="form-input" id="caIcon">
+                <option value="🏆">🏆 Trophy</option>
+                <option value="🎯">🎯 Target</option>
+                <option value="🌱">🌱 Eco Seed</option>
+                <option value="🥗">🥗 Salad / Veg</option>
+                <option value="⭐">⭐ Star</option>
+                <option value="🔥">🔥 Streak / Energy</option>
+                <option value="💪">💪 Fitness / Strength</option>
+                <option value="💧">💧 Hydration</option>
+                <option value="🚴">🚴 Active / Bike</option>
+                <option value="🍏">🍏 Plant Power</option>
+              </select>
+            </div>
+            <div class="form-field" style="flex: 1; display: flex; align-items: flex-end; padding-bottom: 8px;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer;">
+                <input type="checkbox" id="caUnlocked" checked style="accent-color: var(--primary-600); width: 16px; height: 16px;">
+                <span>Unlocked Now 🎉</span>
+              </label>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 18px;">
+            <button type="button" class="btn-secondary" id="btnCloseCustomAchievementModal" style="flex: 1;">Cancel</button>
+            <button type="submit" class="btn-primary-block" style="flex: 2;">Save Achievement 🏆</button>
+          </div>
+        </form>
       </div>
     </div>
 
   </div><!-- end .app-container -->
 
   <!-- JavaScript Modules -->
-  <script type="module" src="js/app.js?v=1.0.2"></script>
+  <script type="module" src="js/app.js?v=1.0.5"></script>
 </body>
 </html>

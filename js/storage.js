@@ -1,4 +1,4 @@
-import { INITIAL_FOOD_ITEMS } from './foodData.js?v=1.0.2';
+import { INITIAL_FOOD_ITEMS } from './foodData.js?v=1.0.5';
 
 const STORAGE_KEYS = {
   MEALS: 'eco_tracker_meals_v1',
@@ -345,6 +345,7 @@ export function exportDataAsJSON() {
     meals: getMeals(),
     foods: getAvailableFoods(),
     groceries: getGroceryItems(),
+    customAchievements: JSON.parse(localStorage.getItem('eco_tracker_custom_achievements_v1') || '[]'),
     settings: getSettings(),
     exportedAt: new Date().toISOString()
   };
@@ -370,6 +371,9 @@ export function importDataFromJSON(jsonString) {
     }
     if (data.groceries && Array.isArray(data.groceries)) {
       localStorage.setItem(STORAGE_KEYS.GROCERIES, JSON.stringify(data.groceries));
+    }
+    if (data.customAchievements && Array.isArray(data.customAchievements)) {
+      localStorage.setItem('eco_tracker_custom_achievements_v1', JSON.stringify(data.customAchievements));
     }
     if (data.settings) {
       localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(data.settings));

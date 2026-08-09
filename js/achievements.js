@@ -1,4 +1,4 @@
-import { getMeals, getSettings } from './storage.js?v=1.0.2';
+import { getMeals, getSettings } from './storage.js?v=1.0.5';
 
 const ACHIEVEMENTS_STORAGE_KEY = 'eco_tracker_achievements_v1';
 
@@ -194,6 +194,59 @@ export function evaluateAchievements() {
   return { achievements: updated, averages, todayCal, todayCo2, lowCo2MealCount };
 }
 
+const CUSTOM_ACHIEVEMENTS_KEY = 'eco_tracker_custom_achievements_v1';
+
+/**
+ * Get all custom user-defined achievements
+ */
+export function getCustomAchievements() {
+  const raw = localStorage.getItem(CUSTOM_ACHIEVEMENTS_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+
+/**
+ * Save a new custom achievement created by user
+ */
+export function saveCustomAchievement(item) {
+  const list = getCustomAchievements();
+  const newItem = {
+    id: `custom-ach-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    title: item.title.trim(),
+    desc: item.desc ? item.desc.trim() : 'Personal goal',
+    icon: item.icon || '⭐',
+    unlocked: item.unlocked !== undefined ? Boolean(item.unlocked) : true,
+    unlockedAt: item.unlocked ? new Date().toISOString() : null,
+    isCustom: true
+  };
+  list.unshift(newItem);
+  localStorage.setItem(CUSTOM_ACHIEVEMENTS_KEY, JSON.stringify(list));
+  return newItem;
+}
+
+/**
+ * Toggle unlocked status of a custom achievement
+ */
+export function toggleCustomAchievement(id) {
+  const list = getCustomAchievements();
+  const found = list.find(a => a.id === id);
+  if (found) {
+    found.unlocked = !found.unlocked;
+    found.unlockedAt = found.unlocked ? new Date().toISOString() : null;
+    localStorage.setItem(CUSTOM_ACHIEVEMENTS_KEY, JSON.stringify(list));
+  }
+  return list;
+}
+
+/**
+ * Delete a custom achievement
+ */
+export function deleteCustomAchievement(id) {
+  const list = getCustomAchievements();
+  const updated = list.filter(a => a.id !== id);
+  localStorage.setItem(CUSTOM_ACHIEVEMENTS_KEY, JSON.stringify(updated));
+  return updated;
+}
+
 /**
  * Render Achievements List in Reports Tab
  */
@@ -201,22 +254,34 @@ export function renderAchievementsSection(containerEl) {
   if (!containerEl) return;
 
   const { achievements, averages, todayCal, todayCo2 } = evaluateAchievements();
-  const totalCount = ACHIEVEMENT_DEFINITIONS.length;
-  const unlockedCount = Object.values(achievements).filter(a => a.unlocked).length;
+  const customAchievements = getCustomAchievements();
+
+  const stdTotal = ACHIEVEMENT_DEFINITIONS.length;
+  const stdUnlocked = Object.values(achievements).filter(a => a.unlocked).length;
+  const customUnlocked = customAchievements.filter(a => a.unlocked).length;
+
+  const totalUnlocked = stdUnlocked + customUnlocked;
+  const totalTotal = stdTotal + customAchievements.length;
 
   let html = `
-    <div class="achievement-header">
-      <div class="achievement-title">
-        <span>🏆 Badges & Achievements</span>
-        <span class="badge-count-pill">${unlockedCount} / ${totalCount} Unlocked</span>
+    <div class="achievement-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+      <div>
+        <div class="achievement-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>🏆 Badges & Achievements</span>
+          <span class="badge-count-pill">${totalUnlocked} / ${totalTotal} Unlocked</span>
+        </div>
+        <div class="avg-stats-sub" style="margin-top: 2px;">
+          <span>Your 7-Day Avg: <strong>${averages.avgCal} kcal</strong> • <strong>${averages.avgCo2} kg CO₂</strong></span>
+        </div>
       </div>
-      <div class="avg-stats-sub">
-        <span>Your 7-Day Avg: <strong>${averages.avgCal} kcal</strong> • <strong>${averages.avgCo2} kg CO₂</strong></span>
-      </div>
+      <button class="btn-secondary" id="btnOpenAddAchievement" style="padding: 6px 12px; font-size: 0.78rem; font-weight: 700; border-color: var(--primary-500); color: var(--primary-700); background: var(--primary-50);">
+        + Add Achievement
+      </button>
     </div>
     <div class="achievements-grid">
   `;
 
+  // 1. Render Built-in Achievements
   ACHIEVEMENT_DEFINITIONS.forEach(def => {
     const status = achievements[def.id];
     const isUnlocked = status && status.unlocked;
@@ -242,6 +307,34 @@ export function renderAchievementsSection(containerEl) {
           </div>
           <div class="achievement-card-desc">${def.desc}</div>
           ${progressStr ? `<div class="achievement-progress">${progressStr}</div>` : ''}
+        </div>
+      </div>
+    `;
+  });
+
+  // 2. Render User Custom Achievements
+  customAchievements.forEach(custom => {
+    const isUnlocked = custom.unlocked;
+    const unlockDate = isUnlocked && custom.unlockedAt ? new Date(custom.unlockedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+
+    html += `
+      <div class="achievement-card ${isUnlocked ? 'unlocked' : 'locked'} custom-ach-card" data-id="${custom.id}">
+        <div class="achievement-icon-wrap">${custom.icon || '⭐'}</div>
+        <div class="achievement-info" style="position: relative; padding-right: 28px;">
+          <div class="achievement-card-title">
+            ${custom.title}
+            <span class="custom-badge-pill" style="font-size: 0.65rem; background: var(--primary-100); color: var(--primary-700); padding: 1px 6px; border-radius: 8px; margin-left: 4px;">Custom</span>
+            ${isUnlocked ? `<span class="unlocked-tag">Unlocked ${unlockDate}</span>` : `<span class="locked-tag">In Progress</span>`}
+          </div>
+          <div class="achievement-card-desc">${custom.desc}</div>
+          <div style="margin-top: 4px; display: flex; align-items: center; gap: 8px;">
+            <button class="btn-toggle-custom-ach text-link-btn" data-id="${custom.id}" style="font-size: 0.72rem;">
+              ${isUnlocked ? 'Mark Locked' : '✓ Mark Unlocked'}
+            </button>
+          </div>
+          <button class="food-action-btn delete-btn btn-del-custom-ach" data-id="${custom.id}" title="Delete achievement" style="position: absolute; top: 0; right: 0;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          </button>
         </div>
       </div>
     `;

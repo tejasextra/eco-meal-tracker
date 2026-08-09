@@ -1,4 +1,4 @@
-import { getEcoGrade } from './foodData.js?v=1.0.2';
+import { getEcoGrade } from './foodData.js?v=1.0.5';
 import { 
   getAvailableFoods, 
   getMeals, 
@@ -17,9 +17,15 @@ import {
   saveUserProfile,
   exportDataAsJSON, 
   importDataFromJSON 
-} from './storage.js?v=1.0.2';
-import { renderTrendChart, renderCategoryBreakdown, renderMacroBreakdown } from './charts.js?v=1.0.2';
-import { renderAchievementsSection, evaluateAchievements } from './achievements.js?v=1.0.2';
+} from './storage.js?v=1.0.5';
+import { renderTrendChart, renderCategoryBreakdown, renderMacroBreakdown } from './charts.js?v=1.0.5';
+import { 
+  renderAchievementsSection, 
+  evaluateAchievements,
+  saveCustomAchievement,
+  toggleCustomAchievement,
+  deleteCustomAchievement
+} from './achievements.js?v=1.0.5';
 
 // State Management
 let state = {
@@ -277,6 +283,62 @@ function setupEventListeners() {
   document.getElementById('btnCloseProfileModal')?.addEventListener('click', () => {
     document.getElementById('profileSetupModal').classList.remove('open');
   });
+
+  // Custom Achievement Modal & Handlers
+  document.addEventListener('click', (e) => {
+    // Open Add Achievement Modal button (rendered in Reports header)
+    if (e.target && (e.target.id === 'btnOpenAddAchievement' || e.target.closest('#btnOpenAddAchievement'))) {
+      document.getElementById('customAchievementModal').classList.add('open');
+    }
+    // Delete Custom Achievement
+    if (e.target && e.target.closest('.btn-del-custom-ach')) {
+      const btn = e.target.closest('.btn-del-custom-ach');
+      const id = btn.getAttribute('data-id');
+      if (confirm('Delete this custom achievement?')) {
+        deleteCustomAchievement(id);
+        showToast('Achievement deleted');
+        renderAchievementsSection(document.getElementById('achievementsContainer'));
+      }
+    }
+    // Toggle Custom Achievement Status
+    if (e.target && e.target.closest('.btn-toggle-custom-ach')) {
+      const btn = e.target.closest('.btn-toggle-custom-ach');
+      const id = btn.getAttribute('data-id');
+      toggleCustomAchievement(id);
+      showToast('Achievement status updated!');
+      renderAchievementsSection(document.getElementById('achievementsContainer'));
+    }
+  });
+
+  document.getElementById('btnCloseCustomAchievementModal')?.addEventListener('click', () => {
+    document.getElementById('customAchievementModal').classList.remove('open');
+  });
+
+  const formCustomAchievement = document.getElementById('formCustomAchievement');
+  if (formCustomAchievement) {
+    formCustomAchievement.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = document.getElementById('caTitle').value.trim();
+      const desc = document.getElementById('caDesc').value.trim();
+      const icon = document.getElementById('caIcon').value;
+      const unlocked = document.getElementById('caUnlocked').checked;
+
+      if (!title) {
+        showToast('Please enter an Achievement Title');
+        return;
+      }
+
+      saveCustomAchievement({ title, desc, icon, unlocked });
+
+      // Reset form
+      document.getElementById('caTitle').value = '';
+      document.getElementById('caDesc').value = '';
+
+      document.getElementById('customAchievementModal').classList.remove('open');
+      showToast('Custom Achievement Added! 🏆');
+      renderAchievementsSection(document.getElementById('achievementsContainer'));
+    });
+  }
 }
 
 /**
