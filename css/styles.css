@@ -58,34 +58,53 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ==========================================================================
+   LAYOUT - Flexbox Column Approach (Works at ALL screen widths)
+   ========================================================================== */
+
+/*
+  Architecture:
+  body → flex container, centers .app-container
+  .app-container → flex column, fills viewport height
+    .app-header → flex-shrink:0 (fixed height at top)
+    .app-content → flex:1, min-height:0, overflow-y:auto (SCROLLABLE AREA)
+    .bottom-nav → flex-shrink:0 (fixed height at bottom)
+
+  Key: min-height:0 on .app-content prevents flex children from
+  overflowing the container, which causes the extra scroll space.
+  No position:fixed needed → no z-index battles, no overflow clipping.
+*/
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: #0f172a;
   color: var(--text-dark);
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
   line-height: 1.5;
+  margin: 0;
+  padding: 0;
 }
 
-/* App Wrapper Shell - base (mobile-first) */
+/* The app shell — flex column that fills the full viewport height */
 .app-container {
   width: 100%;
-  max-width: var(--max-app-width);
+  max-width: var(--max-app-width); /* 480px cap — phone-size */
   height: 100vh;
   height: 100dvh;
   background-color: var(--bg-app);
   display: flex;
   flex-direction: column;
-  position: relative;
-  /* No overflow:hidden on mobile - it clips fixed bottom nav */
-  overflow: visible;
-  box-shadow: none;
+  overflow: hidden; /* clips children to the container */
+  flex-shrink: 0;
+  flex-grow: 0;
 }
 
 /* ==========================================================================
-   Desktop Responsive Layout Enhancements (Width >= 768px)
+   Desktop Layout (>= 768px): Centered card on gray background
    ========================================================================== */
 @media (min-width: 768px) {
   body {
@@ -98,14 +117,14 @@ body {
   .app-container {
     max-width: 1180px;
     height: 94vh;
+    height: 94dvh;
     max-height: 1000px;
     border-radius: 24px;
     border: 1px solid var(--border-subtle);
     box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.1);
-    overflow: hidden; /* Desktop shell clips content cleanly */
   }
 
-  /* Desktop Top Navigation Links */
+  /* Show desktop nav links */
   .desktop-nav-links {
     display: flex !important;
     align-items: center;
@@ -153,7 +172,7 @@ body {
     background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
   }
 
-  /* Hide Mobile Bottom Bar and Floating FAB on Desktop */
+  /* Hide Mobile Bottom Bar on Desktop */
   .bottom-nav {
     display: none !important;
   }
@@ -187,7 +206,7 @@ body {
     gap: 12px;
   }
 
-  /* Desktop Drawer transforms into a sleek Centered Modal */
+  /* Desktop Drawer → Centered Modal */
   .drawer-backdrop {
     display: flex;
     align-items: center;
@@ -211,77 +230,46 @@ body {
     opacity: 1;
   }
 }
-/* END desktop media query */
 
 /* ==========================================================================
-   Mobile Layout (max-width: 767px)
+   Mobile Layout (<= 767px): Full screen, bottom nav visible
    ========================================================================== */
 @media (max-width: 767px) {
   body {
     background-color: var(--bg-app);
     padding: 0;
     align-items: stretch;
-    justify-content: flex-start;
-  }
-
-  .desktop-nav-links {
-    display: none !important;
+    justify-content: center;
   }
 
   .app-container {
     width: 100%;
+    max-width: 100%;
     height: 100vh;
     height: 100dvh;
-    max-height: none;
     border-radius: 0;
     box-shadow: none;
-    overflow: visible;
   }
 
-  /* Inner scrollable area must clip on mobile */
-  .app-content {
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding-bottom: calc(var(--bottom-nav-height) + 24px + env(safe-area-inset-bottom, 0px));
-    -webkit-overflow-scrolling: touch;
+  /* Hide desktop nav links on mobile */
+  .desktop-nav-links {
+    display: none !important;
   }
 
-  /* Fixed Top Header on Mobile */
-  .app-header {
-    position: sticky;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 50;
-    flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
-
-  /* Fixed Bottom Navigation Bar on Mobile */
+  /* Bottom nav visible on mobile — sits at base of flex column */
   .bottom-nav {
-    position: fixed !important;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    z-index: 999;
-    background: rgba(255, 255, 255, 0.97);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid var(--border-subtle);
-    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08);
     display: flex !important;
+    flex-shrink: 0;
+    position: static; /* No position:fixed needed */
   }
 }
 
-/* Header */
+
+/* Header — flex-shrink:0 keeps it pinned at top of flex column */
 .app-header {
   height: var(--top-header-height);
-  background: var(--surface-glass);
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-subtle);
@@ -289,9 +277,8 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  position: sticky;
-  top: 0;
   z-index: 20;
+  position: relative;
 }
 
 .brand {
@@ -406,12 +393,17 @@ body {
   transform: scale(0.96);
 }
 
-/* Scrollable Main View Area */
+/* Scrollable Main View Area — flex:1 + min-height:0 is CRITICAL
+   min-height:0 prevents flex child from overflowing its container
+   which causes extra empty scroll space at the bottom of sections */
 .app-content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 16px 16px 90px 16px;
+  overflow-x: hidden;
+  padding: 16px 16px 24px 16px;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* View Pages */
@@ -750,9 +742,10 @@ body {
   display: none !important;
 }
 
-/* Bottom Navigation Tab Bar - base styles shared by both breakpoints */
+/* Bottom Navigation Tab Bar */
 .bottom-nav {
   height: var(--bottom-nav-height);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background: white;
   border-top: 1px solid var(--border-subtle);
   display: flex;
@@ -760,6 +753,7 @@ body {
   align-items: center;
   z-index: 20;
   flex-shrink: 0;
+  box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.06);
 }
 
 .nav-item {
