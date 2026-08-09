@@ -60,7 +60,7 @@
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #0f172a; /* Outer desktop bg */
+  background-color: #0f172a;
   color: var(--text-dark);
   min-height: 100vh;
   display: flex;
@@ -69,26 +69,19 @@ body {
   line-height: 1.5;
 }
 
-/* Mobile App Wrapper Shell */
+/* App Wrapper Shell - base (mobile-first) */
 .app-container {
   width: 100%;
   max-width: var(--max-app-width);
   height: 100vh;
-  max-height: 920px;
+  height: 100dvh;
   background-color: var(--bg-app);
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-}
-
-@media (max-width: 480px) {
-  .app-container {
-    height: 100vh;
-    max-height: none;
-    border-radius: 0;
-  }
+  /* No overflow:hidden on mobile - it clips fixed bottom nav */
+  overflow: visible;
+  box-shadow: none;
 }
 
 /* ==========================================================================
@@ -98,6 +91,8 @@ body {
   body {
     background-color: #f1f5f9;
     padding: 20px;
+    align-items: center;
+    justify-content: center;
   }
 
   .app-container {
@@ -107,6 +102,7 @@ body {
     border-radius: 24px;
     border: 1px solid var(--border-subtle);
     box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.1);
+    overflow: hidden; /* Desktop shell clips content cleanly */
   }
 
   /* Desktop Top Navigation Links */
@@ -214,16 +210,40 @@ body {
     transform: scale(1) translateY(0);
     opacity: 1;
   }
+}
+/* END desktop media query */
+
+/* ==========================================================================
+   Mobile Layout (max-width: 767px)
+   ========================================================================== */
 @media (max-width: 767px) {
+  body {
+    background-color: var(--bg-app);
+    padding: 0;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+
   .desktop-nav-links {
     display: none !important;
   }
 
   .app-container {
+    width: 100%;
     height: 100vh;
     height: 100dvh;
     max-height: none;
     border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  /* Inner scrollable area must clip on mobile */
+  .app-content {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: calc(var(--bottom-nav-height) + 24px + env(safe-area-inset-bottom, 0px));
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Fixed Top Header on Mobile */
@@ -241,24 +261,20 @@ body {
 
   /* Fixed Bottom Navigation Bar on Mobile */
   .bottom-nav {
-    position: fixed;
+    position: fixed !important;
     bottom: 0;
     left: 0;
     right: 0;
     width: 100%;
     height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    z-index: 50;
-    background: rgba(255, 255, 255, 0.96);
+    z-index: 999;
+    background: rgba(255, 255, 255, 0.97);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-top: 1px solid var(--border-subtle);
     box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08);
-  }
-
-  .app-content {
-    padding-bottom: calc(var(--bottom-nav-height) + 24px + env(safe-area-inset-bottom, 0px));
-    -webkit-overflow-scrolling: touch;
+    display: flex !important;
   }
 }
 
@@ -734,12 +750,8 @@ body {
   display: none !important;
 }
 
-/* Bottom Navigation Tab Bar */
+/* Bottom Navigation Tab Bar - base styles shared by both breakpoints */
 .bottom-nav {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   height: var(--bottom-nav-height);
   background: white;
   border-top: 1px solid var(--border-subtle);
@@ -747,6 +759,7 @@ body {
   justify-content: space-around;
   align-items: center;
   z-index: 20;
+  flex-shrink: 0;
 }
 
 .nav-item {

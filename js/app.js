@@ -1,4 +1,4 @@
-import { getEcoGrade } from './foodData.js?v=1.0.5';
+import { getEcoGrade } from './foodData.js?v=1.0.7';
 import { 
   getAvailableFoods, 
   getMeals, 
@@ -17,15 +17,15 @@ import {
   saveUserProfile,
   exportDataAsJSON, 
   importDataFromJSON 
-} from './storage.js?v=1.0.5';
-import { renderTrendChart, renderCategoryBreakdown, renderMacroBreakdown } from './charts.js?v=1.0.5';
+} from './storage.js?v=1.0.7';
+import { renderTrendChart, renderCategoryBreakdown, renderMacroBreakdown } from './charts.js?v=1.0.7';
 import { 
   renderAchievementsSection, 
   evaluateAchievements,
   saveCustomAchievement,
   toggleCustomAchievement,
   deleteCustomAchievement
-} from './achievements.js?v=1.0.5';
+} from './achievements.js?v=1.0.7';
 
 // State Management
 let state = {
@@ -1196,3 +1196,5 @@ function renderProfileView() {
   document.getElementById('profValDiet').textContent = profile.dietType || 'Vegetarian';
   document.getElementById('profValAllergies').textContent = profile.allergies && profile.allergies.trim() ? profile.allergies : 'None reported';
 }
+
+

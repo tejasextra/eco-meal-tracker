@@ -1,4 +1,4 @@
-import { getMeals, getSettings } from './storage.js?v=1.0.5';
+import { getMeals, getSettings } from './storage.js?v=1.0.7';
 
 const ACHIEVEMENTS_STORAGE_KEY = 'eco_tracker_achievements_v1';
 
@@ -343,3 +343,5 @@ export function renderAchievementsSection(containerEl) {
   html += `</div>`;
   containerEl.innerHTML = html;
 }
+
+

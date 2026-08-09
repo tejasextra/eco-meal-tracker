@@ -1,4 +1,4 @@
-import { INITIAL_FOOD_ITEMS } from './foodData.js?v=1.0.5';
+import { INITIAL_FOOD_ITEMS } from './foodData.js?v=1.0.7';
 
 const STORAGE_KEYS = {
   MEALS: 'eco_tracker_meals_v1',
@@ -431,3 +431,5 @@ function seedInitialSampleMeals() {
     }
   ];
 }
+
+
