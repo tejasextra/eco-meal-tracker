@@ -1,4 +1,4 @@
-import { getEcoGrade } from './foodData.js?v=1.0.8';
+import { getEcoGrade } from './foodData.js?v=1.1.0';
 import { 
   getAvailableFoods, 
   getMeals, 
@@ -17,15 +17,15 @@ import {
   saveUserProfile,
   exportDataAsJSON, 
   importDataFromJSON 
-} from './storage.js?v=1.0.8';
-import { renderTrendChart, renderCategoryBreakdown, renderMacroBreakdown } from './charts.js?v=1.0.8';
+} from './storage.js?v=1.1.0';
+import { renderTrendChart, renderCategoryBreakdown, renderMacroBreakdown } from './charts.js?v=1.1.0';
 import { 
   renderAchievementsSection, 
   evaluateAchievements,
   saveCustomAchievement,
   toggleCustomAchievement,
   deleteCustomAchievement
-} from './achievements.js?v=1.0.8';
+} from './achievements.js?v=1.1.0';
 
 // State Management
 let state = {
