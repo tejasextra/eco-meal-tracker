@@ -1,11 +1,12 @@
-import { INITIAL_FOOD_ITEMS } from './foodData.js?v=1.1.0';
+import { INITIAL_FOOD_ITEMS } from './foodData.js?v=1.3.1';
 
 const STORAGE_KEYS = {
   MEALS: 'eco_tracker_meals_v1',
   FOODS: 'eco_tracker_all_foods_v2',
   GROCERIES: 'eco_tracker_groceries_v1',
   PROFILE: 'eco_tracker_profile_v1',
-  SETTINGS: 'eco_tracker_settings_v1'
+  SETTINGS: 'eco_tracker_settings_v1',
+  AI_KEY: 'eco_tracker_ai_key_v1'
 };
 
 const DEFAULT_SETTINGS = {
@@ -424,12 +425,35 @@ function seedInitialSampleMeals() {
       ],
       totalCalories: 665,
       totalCarbon: 0.90,
-      totalCarbs: 119,
-      totalProtein: 23.8,
-      totalFat: 9.3,
       totalFiber: 12.7
     }
   ];
 }
+
+/**
+ * Get saved AI API Key
+ */
+export function getAIApiKey() {
+  return localStorage.getItem(STORAGE_KEYS.AI_KEY) || '';
+}
+
+/**
+ * Save AI API Key
+ */
+export function saveAIApiKey(key) {
+  if (!key) {
+    localStorage.removeItem(STORAGE_KEYS.AI_KEY);
+  } else {
+    localStorage.setItem(STORAGE_KEYS.AI_KEY, key.trim());
+  }
+}
+
+/**
+ * Remove AI API Key
+ */
+export function removeAIApiKey() {
+  localStorage.removeItem(STORAGE_KEYS.AI_KEY);
+}
+
 
 

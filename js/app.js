@@ -1,4 +1,4 @@
-import { getEcoGrade } from './foodData.js?v=1.1.0';
+import { getEcoGrade } from './foodData.js?v=1.3.1';
 import { 
   getAvailableFoods, 
   getMeals, 
@@ -16,16 +16,20 @@ import {
   getUserProfile,
   saveUserProfile,
   exportDataAsJSON, 
-  importDataFromJSON 
-} from './storage.js?v=1.1.0';
-import { renderTrendChart, renderCategoryBreakdown, renderMacroBreakdown } from './charts.js?v=1.1.0';
+  importDataFromJSON,
+  getAIApiKey,
+  saveAIApiKey,
+  removeAIApiKey
+} from './storage.js?v=1.3.1';
+import { renderTrendChart, renderCategoryBreakdown, renderMacroBreakdown } from './charts.js?v=1.3.1';
 import { 
   renderAchievementsSection, 
   evaluateAchievements,
   saveCustomAchievement,
   toggleCustomAchievement,
   deleteCustomAchievement
-} from './achievements.js?v=1.1.0';
+} from './achievements.js?v=1.3.1';
+import { analyzeFoodImage, chatWithAICoach } from './aiService.js?v=1.3.1';
 
 // State Management
 let state = {
@@ -64,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initLucideIcons();
   setupEventListeners();
   setDefaultDateTimeInput();
+  updateAiFeatureVisibility();
 
   // First time user profile check
   const profile = getUserProfile();
@@ -120,22 +125,22 @@ function setupEventListeners() {
   });
 
   // FAB Add Meal Trigger
-  document.getElementById('fabAddMeal').addEventListener('click', openAddMealDrawer);
+  document.getElementById('fabAddMeal')?.addEventListener('click', openAddMealDrawer);
 
   // Date Navigator on Home Dashboard
-  document.getElementById('btnPrevDate').addEventListener('click', () => {
+  document.getElementById('btnPrevDate')?.addEventListener('click', () => {
     state.selectedDate.setDate(state.selectedDate.getDate() - 1);
     renderHomeDashboard();
   });
 
-  document.getElementById('btnNextDate').addEventListener('click', () => {
+  document.getElementById('btnNextDate')?.addEventListener('click', () => {
     state.selectedDate.setDate(state.selectedDate.getDate() + 1);
     renderHomeDashboard();
   });
 
   // Drawer Controls
-  document.getElementById('btnCloseDrawer').addEventListener('click', closeAddMealDrawer);
-  document.getElementById('drawerBackdrop').addEventListener('click', (e) => {
+  document.getElementById('btnCloseDrawer')?.addEventListener('click', closeAddMealDrawer);
+  document.getElementById('drawerBackdrop')?.addEventListener('click', (e) => {
     if (e.target.id === 'drawerBackdrop') closeAddMealDrawer();
   });
 
@@ -150,12 +155,12 @@ function setupEventListeners() {
   });
 
   // Drawer Search
-  document.getElementById('drawerSearchInput').addEventListener('input', () => {
+  document.getElementById('drawerSearchInput')?.addEventListener('input', () => {
     renderDrawerFoodList();
   });
 
   // Save Meal Action
-  document.getElementById('btnSaveMeal').addEventListener('click', handleSaveMeal);
+  document.getElementById('btnSaveMeal')?.addEventListener('click', handleSaveMeal);
 
   // Reports Period Switcher
   document.querySelectorAll('.period-toggle .period-btn').forEach(btn => {
@@ -168,7 +173,7 @@ function setupEventListeners() {
   });
 
   // Database Tab Search & Category Filter
-  document.getElementById('dbSearchInput').addEventListener('input', renderDatabaseView);
+  document.getElementById('dbSearchInput')?.addEventListener('input', renderDatabaseView);
   document.querySelectorAll('#dbCategoryPills .cat-pill').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#dbCategoryPills .cat-pill').forEach(b => b.classList.remove('active'));
@@ -178,31 +183,36 @@ function setupEventListeners() {
     });
   });
 
-  // Custom Food Modal
-  document.getElementById('btnOpenAddCustomFood').addEventListener('click', () => {
-    document.getElementById('customFoodModal').classList.add('open');
+  // Custom Food Modal (Choice between Manual & AI if API key exists)
+  document.getElementById('btnOpenAddCustomFood')?.addEventListener('click', () => {
+    const hasKey = Boolean(getAIApiKey());
+    if (hasKey) {
+      document.getElementById('choiceAddFoodModal')?.classList.add('open');
+    } else {
+      document.getElementById('customFoodModal')?.classList.add('open');
+    }
   });
 
-  document.getElementById('btnCloseCustomFoodModal').addEventListener('click', () => {
-    document.getElementById('customFoodModal').classList.remove('open');
+  document.getElementById('btnCloseCustomFoodModal')?.addEventListener('click', () => {
+    document.getElementById('customFoodModal')?.classList.remove('open');
   });
 
-  document.getElementById('btnSaveCustomFood').addEventListener('click', handleSaveCustomFood);
+  document.getElementById('btnSaveCustomFood')?.addEventListener('click', handleSaveCustomFood);
 
   // Edit Food Modal
-  document.getElementById('btnCloseEditFoodModal').addEventListener('click', () => {
-    document.getElementById('editFoodModal').classList.remove('open');
+  document.getElementById('btnCloseEditFoodModal')?.addEventListener('click', () => {
+    document.getElementById('editFoodModal')?.classList.remove('open');
   });
 
-  document.getElementById('btnSaveEditFood').addEventListener('click', handleSaveEditFood);
+  document.getElementById('btnSaveEditFood')?.addEventListener('click', handleSaveEditFood);
 
   // Data Export & Import
-  document.getElementById('btnExportData').addEventListener('click', handleExportData);
-  document.getElementById('btnExportJSON').addEventListener('click', handleExportData);
+  document.getElementById('btnExportData')?.addEventListener('click', handleExportData);
+  document.getElementById('btnExportJSON')?.addEventListener('click', handleExportData);
 
   const importFileInput = document.getElementById('fileImportInput');
-  document.getElementById('btnImportJSON').addEventListener('click', () => importFileInput.click());
-  importFileInput.addEventListener('change', handleImportData);
+  document.getElementById('btnImportJSON')?.addEventListener('click', () => importFileInput?.click());
+  importFileInput?.addEventListener('change', handleImportData);
 
   // Grocery Form Submit & Clear
   const formAddGrocery = document.getElementById('formAddGrocery');
@@ -244,7 +254,7 @@ function setupEventListeners() {
     });
   });
 
-  // Profile Setup Form Submit
+  // Profile Setup Form Submit (fires from Submit button in Step 3)
   const formProfileSetup = document.getElementById('formProfileSetup');
   if (formProfileSetup) {
     formProfileSetup.addEventListener('submit', (e) => {
@@ -274,6 +284,34 @@ function setupEventListeners() {
       renderCurrentView();
     });
   }
+
+  // Wizard — Step 1 Next button (validates Step 1 fields)
+  document.getElementById('btnWizardNext1')?.addEventListener('click', () => {
+    const name = document.getElementById('psName').value.trim();
+    const age = document.getElementById('psAge').value;
+    const height = document.getElementById('psHeight').value;
+    const weight = document.getElementById('psWeight').value;
+    if (!name || !age || !height || !weight) {
+      showToast('Please fill in Name, Age, Height, and Weight');
+      return;
+    }
+    wizardGotoStep(2);
+  });
+
+  // Wizard — Step 2 Back button
+  document.getElementById('btnWizardBack2')?.addEventListener('click', () => {
+    wizardGotoStep(1);
+  });
+
+  // Wizard — Step 2 Next button
+  document.getElementById('btnWizardNext2')?.addEventListener('click', () => {
+    wizardGotoStep(3);
+  });
+
+  // Wizard — Step 3 Back button
+  document.getElementById('btnWizardBack3')?.addEventListener('click', () => {
+    wizardGotoStep(2);
+  });
 
   // Edit Profile Button
   document.getElementById('btnEditProfile')?.addEventListener('click', () => {
@@ -339,6 +377,281 @@ function setupEventListeners() {
       renderAchievementsSection(document.getElementById('achievementsContainer'));
     });
   }
+
+  // =========================================================================
+  // AI FEATURE LISTENERS
+  // =========================================================================
+
+  // Save AI API Key
+  document.getElementById('btnSaveAiKey')?.addEventListener('click', () => {
+    const key = document.getElementById('inputProfAiKey')?.value.trim();
+    if (!key) {
+      showToast('Please enter an API Key');
+      return;
+    }
+    saveAIApiKey(key);
+    updateAiFeatureVisibility();
+    showToast('AI Key Saved! ✨ Features Unlocked!');
+  });
+
+  // Remove AI API Key
+  document.getElementById('btnRemoveAiKey')?.addEventListener('click', () => {
+    removeAIApiKey();
+    const input = document.getElementById('inputProfAiKey');
+    if (input) input.value = '';
+    updateAiFeatureVisibility();
+    showToast('AI API Key Removed');
+    if (state.currentTab === 'tabAICoach') {
+      switchTab('tabHome');
+    }
+  });
+
+  // Toggle Show/Hide AI Key
+  document.getElementById('btnToggleShowAiKey')?.addEventListener('click', () => {
+    const input = document.getElementById('inputProfAiKey');
+    if (!input) return;
+    input.type = input.type === 'password' ? 'text' : 'password';
+  });
+
+  // Choice Modal Handlers
+  document.getElementById('btnChoiceManualFood')?.addEventListener('click', () => {
+    document.getElementById('choiceAddFoodModal')?.classList.remove('open');
+    document.getElementById('customFoodModal')?.classList.add('open');
+  });
+
+  document.getElementById('btnChoiceAiFood')?.addEventListener('click', () => {
+    document.getElementById('choiceAddFoodModal')?.classList.remove('open');
+    resetAiFoodAnalyzerModal();
+    document.getElementById('aiFoodAnalyzerModal')?.classList.add('open');
+  });
+
+  document.getElementById('btnCloseChoiceFoodModal')?.addEventListener('click', () => {
+    document.getElementById('choiceAddFoodModal')?.classList.remove('open');
+  });
+
+  document.getElementById('btnCloseAiFoodModal')?.addEventListener('click', () => {
+    document.getElementById('aiFoodAnalyzerModal')?.classList.remove('open');
+  });
+
+  // AI Image File Select & Camera Capture
+  const handleAiImageSelect = (evt) => {
+    const file = evt.target.files?.[0];
+    if (!file) return;
+
+    pendingAiImageMimeType = file.type || 'image/jpeg';
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      pendingAiImageBase64 = e.target.result;
+      const imgPreview = document.getElementById('imgAiFoodPreview');
+      const previewWrap = document.getElementById('aiFoodPreviewWrap');
+      const btnRun = document.getElementById('btnRunAiAnalysis');
+
+      if (imgPreview) imgPreview.src = pendingAiImageBase64;
+      if (previewWrap) previewWrap.style.display = 'block';
+      if (btnRun) btnRun.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  };
+
+  document.getElementById('inputAiFoodFile')?.addEventListener('change', handleAiImageSelect);
+  document.getElementById('inputAiFoodCamera')?.addEventListener('change', handleAiImageSelect);
+
+  // Run AI Food Analysis
+  document.getElementById('btnRunAiAnalysis')?.addEventListener('click', async () => {
+    if (!pendingAiImageBase64) {
+      showToast('Please select or capture an image first');
+      return;
+    }
+
+    const uploadStep = document.getElementById('aiImageUploadStep');
+    const spinner = document.getElementById('aiAnalysisSpinner');
+    const resultStep = document.getElementById('aiAnalysisResultStep');
+
+    if (uploadStep) uploadStep.style.display = 'none';
+    if (spinner) spinner.style.display = 'block';
+    if (resultStep) resultStep.style.display = 'none';
+
+    try {
+      const foodObj = await analyzeFoodImage(pendingAiImageBase64, pendingAiImageMimeType);
+
+      if (spinner) spinner.style.display = 'none';
+      if (resultStep) resultStep.style.display = 'block';
+
+      // Pre-fill result form
+      document.getElementById('aiResName').value = foodObj.name || '';
+      document.getElementById('aiResCategory').value = foodObj.category || 'Custom';
+      document.getElementById('aiResCalories').value = foodObj.caloriesPer100g || '';
+      document.getElementById('aiResCarbon').value = foodObj.carbonPer100g || '';
+      document.getElementById('aiResCarbs').value = foodObj.carbs || '';
+      document.getElementById('aiResProtein').value = foodObj.protein || '';
+      document.getElementById('aiResFat').value = foodObj.fat || '';
+      document.getElementById('aiResFiber').value = foodObj.fiber || '';
+      document.getElementById('aiResUnit').value = foodObj.unit || 'kg CO2e per 100g';
+
+      showToast('Food analyzed successfully! ✨');
+    } catch (err) {
+      if (spinner) spinner.style.display = 'none';
+      if (uploadStep) uploadStep.style.display = 'block';
+      showToast(err.message || 'AI Analysis failed. Please try again.');
+    }
+  });
+
+  // AI Analyze Again
+  document.getElementById('btnAiAnalyzeAgain')?.addEventListener('click', () => {
+    resetAiFoodAnalyzerModal();
+  });
+
+  // Save AI Food Result Form
+  document.getElementById('formSaveAiFood')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('aiResName').value.trim();
+    const category = document.getElementById('aiResCategory').value;
+    const calories = Number(document.getElementById('aiResCalories').value) || 0;
+    const carbon = Number(document.getElementById('aiResCarbon').value) || 0;
+    const unit = document.getElementById('aiResUnit').value.trim() || 'kg CO2e per 100g';
+    const carbs = Number(document.getElementById('aiResCarbs').value) || 0;
+    const protein = Number(document.getElementById('aiResProtein').value) || 0;
+    const fat = Number(document.getElementById('aiResFat').value) || 0;
+    const fiber = Number(document.getElementById('aiResFiber').value) || 0;
+
+    if (!name || isNaN(calories) || isNaN(carbon)) {
+      showToast('Please enter Food Name, Calories, and CO₂ footprint');
+      return;
+    }
+
+    saveCustomFood({
+      name, category, caloriesPer100g: calories, carbonPer100g: carbon,
+      unit, carbs, protein, fat, fiber
+    });
+
+    state.availableFoods = getAvailableFoods();
+    document.getElementById('aiFoodAnalyzerModal')?.classList.remove('open');
+    showToast(`Saved "${name}" to Food Directory! 🌱`);
+    renderDatabaseView();
+    renderDrawerFoodList();
+  });
+
+  // Form AI Chat Submit
+  document.getElementById('formAiChat')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('inputAiChat');
+    const userMsg = input?.value.trim();
+    if (!userMsg) return;
+
+    input.value = '';
+    appendAiChatMessage('user', userMsg);
+
+    const typing = document.getElementById('aiTypingIndicator');
+    if (typing) typing.style.display = 'block';
+
+    try {
+      const responseText = await chatWithAICoach(userMsg, aiChatHistory);
+      if (typing) typing.style.display = 'none';
+      appendAiChatMessage('assistant', responseText);
+      aiChatHistory.push({ role: 'user', text: userMsg });
+      aiChatHistory.push({ role: 'assistant', text: responseText });
+    } catch (err) {
+      if (typing) typing.style.display = 'none';
+      appendAiChatMessage('assistant', `⚠️ ${err.message || 'Sorry, I could not process your message right now.'}`);
+    }
+  });
+
+  // Prompt Chips Click Handlers
+  document.querySelectorAll('.ai-prompt-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const promptText = chip.getAttribute('data-prompt');
+      const input = document.getElementById('inputAiChat');
+      if (input && promptText) {
+        input.value = promptText;
+        document.getElementById('formAiChat')?.dispatchEvent(new Event('submit', { cancelable: true }));
+      }
+    });
+  });
+}
+
+// AI Feature State Variables
+let aiChatHistory = [];
+let pendingAiImageBase64 = null;
+let pendingAiImageMimeType = 'image/jpeg';
+
+/**
+ * Update visibility of AI Coach nav items & profile API Key status
+ */
+function updateAiFeatureVisibility() {
+  const apiKey = getAIApiKey();
+  const hasKey = Boolean(apiKey);
+
+  // Desktop Nav AI Coach button
+  const navBtnAiCoach = document.getElementById('navBtnAiCoach');
+  if (navBtnAiCoach) navBtnAiCoach.style.display = hasKey ? 'inline-flex' : 'none';
+
+  // Mobile Bottom Nav AI Coach button
+  const mobileNavBtnAiCoach = document.getElementById('mobileNavBtnAiCoach');
+  if (mobileNavBtnAiCoach) mobileNavBtnAiCoach.style.display = hasKey ? 'flex' : 'none';
+
+  // Profile View Status Badge & Input Field
+  const aiStatusBadge = document.getElementById('aiStatusBadge');
+  if (aiStatusBadge) {
+    if (hasKey) {
+      aiStatusBadge.textContent = '● Active ✨';
+      aiStatusBadge.style.background = 'var(--primary-100)';
+      aiStatusBadge.style.color = 'var(--primary-700)';
+    } else {
+      aiStatusBadge.textContent = '○ Inactive (Optional)';
+      aiStatusBadge.style.background = '#e2e8f0';
+      aiStatusBadge.style.color = '#64748b';
+    }
+  }
+
+  const inputProfAiKey = document.getElementById('inputProfAiKey');
+  if (inputProfAiKey && !inputProfAiKey.value) {
+    inputProfAiKey.value = apiKey;
+  }
+}
+
+function resetAiFoodAnalyzerModal() {
+  pendingAiImageBase64 = null;
+  const fileInput = document.getElementById('inputAiFoodFile');
+  const cameraInput = document.getElementById('inputAiFoodCamera');
+  if (fileInput) fileInput.value = '';
+  if (cameraInput) cameraInput.value = '';
+
+  const previewWrap = document.getElementById('aiFoodPreviewWrap');
+  const btnRun = document.getElementById('btnRunAiAnalysis');
+  const uploadStep = document.getElementById('aiImageUploadStep');
+  const spinner = document.getElementById('aiAnalysisSpinner');
+  const resultStep = document.getElementById('aiAnalysisResultStep');
+
+  if (previewWrap) previewWrap.style.display = 'none';
+  if (btnRun) btnRun.style.display = 'none';
+  if (uploadStep) uploadStep.style.display = 'block';
+  if (spinner) spinner.style.display = 'none';
+  if (resultStep) resultStep.style.display = 'none';
+}
+
+function appendAiChatMessage(role, text) {
+  const container = document.getElementById('aiChatMessages');
+  if (!container) return;
+
+  const bubble = document.createElement('div');
+  bubble.className = `ai-msg-bubble ${role}`;
+
+  const sender = document.createElement('div');
+  sender.className = 'msg-sender';
+  sender.textContent = role === 'user' ? 'You 👤' : 'Annam AI Coach 🤖';
+
+  const textDiv = document.createElement('div');
+  textDiv.className = 'msg-text';
+  textDiv.innerHTML = text
+    .replace(/\n/g, '<br/>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  bubble.appendChild(sender);
+  bubble.appendChild(textDiv);
+  container.appendChild(bubble);
+
+  container.scrollTop = container.scrollHeight;
 }
 
 /**
@@ -1127,24 +1440,72 @@ function createGroceryItemCard(item) {
 }
 
 /**
+ * Wizard helper — navigate to a given step (1, 2, or 3)
+ * Updates progress bar, step dots, and step title/description.
+ */
+let _wizardIsFirstTime = false;
+
+function wizardGotoStep(step) {
+  // Hide all step contents and reset progress indicators
+  document.querySelectorAll('.wizard-step-content').forEach(el => el.classList.remove('active'));
+
+  // Activate the current step content
+  const target = document.getElementById(`step${step}Content`);
+  if (target) target.classList.add('active');
+
+  // Update progress bar dots and lines
+  for (let i = 1; i <= 3; i++) {
+    const stepEl = document.getElementById(`wsStep${i}`);
+    if (!stepEl) continue;
+    const dot = stepEl.querySelector('.step-dot');
+    if (i <= step) {
+      stepEl.classList.add('active');
+      if (dot) dot.textContent = '●';
+    } else {
+      stepEl.classList.remove('active');
+      if (dot) dot.textContent = '○';
+    }
+  }
+  for (let i = 1; i <= 2; i++) {
+    const lineEl = document.getElementById(`wsLine${i}`);
+    if (!lineEl) continue;
+    if (i < step) {
+      lineEl.classList.add('active');
+    } else {
+      lineEl.classList.remove('active');
+    }
+  }
+
+  // Update title and description per step
+  const title = document.getElementById('profModalTitle');
+  const desc  = document.getElementById('profModalDesc');
+  if (step === 1) {
+    if (title) title.textContent = _wizardIsFirstTime ? 'Welcome to Annam 🌱' : 'Edit Profile ✏️';
+    if (desc)  desc.textContent  = _wizardIsFirstTime ? "Let's set up your profile." : 'Update your details below.';
+  } else if (step === 2) {
+    if (title) title.textContent = 'Your Goals 🎯';
+    if (desc)  desc.textContent  = 'Choose your health goals, diet type and activity level.';
+  } else if (step === 3) {
+    if (title) title.textContent = 'Almost Done! 🌱';
+    if (desc)  desc.textContent  = 'Any food allergies we should know about?';
+  }
+}
+
+/**
  * Open Profile Setup Modal and pre-fill if editing
  */
 function openProfileSetupModal(isFirstTime = false) {
-  const profile = getUserProfile();
-  const cancelBtn = document.getElementById('btnCloseProfileModal');
-  const title = document.getElementById('profModalTitle');
-  const desc = document.getElementById('profModalDesc');
+  _wizardIsFirstTime = isFirstTime;
 
+  const cancelBtn = document.getElementById('btnCloseProfileModal');
   if (isFirstTime) {
     if (cancelBtn) cancelBtn.style.display = 'none';
-    if (title) title.textContent = 'Welcome! Set Up Your Profile 👋';
-    if (desc) desc.textContent = 'Tell us about yourself to personalize your daily calorie targets and carbon budgets.';
   } else {
     if (cancelBtn) cancelBtn.style.display = 'block';
-    if (title) title.textContent = 'Edit Profile ✏️';
-    if (desc) desc.textContent = 'Update your physical metrics, activity level, or health goals.';
   }
 
+  // Pre-fill existing profile values so user doesn't lose data
+  const profile = getUserProfile();
   if (profile) {
     document.getElementById('psName').value = profile.name || '';
     document.getElementById('psAge').value = profile.age || '';
@@ -1157,6 +1518,9 @@ function openProfileSetupModal(isFirstTime = false) {
     selectPillOption('#groupGoal', profile.goal || 'Stay Healthy');
     selectPillOption('#groupDiet', profile.dietType || 'Vegetarian');
   }
+
+  // Always start at step 1
+  wizardGotoStep(1);
 
   document.getElementById('profileSetupModal').classList.add('open');
 }

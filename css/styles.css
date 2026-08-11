@@ -127,37 +127,76 @@ body {
     box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.1);
   }
 
-  /* Show desktop nav links */
+  /* Show desktop nav links - Icon-First with Smooth Text Expansion on Hover */
   .desktop-nav-links {
     display: flex !important;
     align-items: center;
     gap: 8px;
-    margin-left: 30px;
+    margin-left: 24px;
   }
 
   .desktop-nav-btn {
     border: none;
     background: transparent;
-    padding: 8px 16px;
+    padding: 8px 10px;
     border-radius: 20px;
     font-size: 0.88rem;
     font-weight: 600;
     color: var(--text-muted);
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
-    transition: all 0.2s ease;
+    justify-content: center;
+    gap: 0px;
+    white-space: nowrap;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    height: 38px;
+    box-sizing: border-box;
+  }
+
+  .desktop-nav-btn svg,
+  .desktop-nav-btn i {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+  }
+
+  .desktop-nav-btn .nav-btn-text {
+    max-width: 0;
+    opacity: 0;
+    margin-left: 0;
+    overflow: hidden;
+    display: inline-block;
+    white-space: nowrap;
+    transition: max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1), 
+                opacity 0.25s ease, 
+                margin-left 0.3s ease;
   }
 
   .desktop-nav-btn:hover {
+    padding: 8px 16px;
     background: var(--primary-50);
     color: var(--primary-700);
+  }
+
+  .desktop-nav-btn:hover .nav-btn-text {
+    max-width: 140px;
+    opacity: 1;
+    margin-left: 6px;
   }
 
   .desktop-nav-btn.active {
     background: var(--primary-600);
     color: white;
+    padding: 8px 14px;
+  }
+
+  /* Active nav button always shows its label */
+  .desktop-nav-btn.active .nav-btn-text {
+    max-width: 140px;
+    opacity: 1;
+    margin-left: 6px;
   }
 
   .desktop-add-btn {
@@ -2079,4 +2118,139 @@ canvas {
 .profile-modal-card {
   max-width: 520px !important;
 }
+
+/* ==========================================================================
+   Profile Setup Wizard Progress Bar & Step Styles
+   ========================================================================== */
+.wizard-progress-bar {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding: 0 4px;
+}
+
+.wizard-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.wizard-step .step-dot {
+  font-size: 1rem;
+  color: var(--border-subtle);
+  transition: color 0.3s ease;
+  line-height: 1;
+}
+
+.wizard-step .step-label {
+  font-size: 0.63rem;
+  font-weight: 600;
+  color: var(--text-light);
+  text-align: center;
+  transition: color 0.3s ease;
+  white-space: nowrap;
+}
+
+.wizard-step.active .step-dot {
+  color: var(--primary-600);
+}
+
+.wizard-step.active .step-label {
+  color: var(--primary-700);
+}
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background: var(--border-subtle);
+  margin-bottom: 16px;
+  margin-left: 6px;
+  margin-right: 6px;
+  border-radius: 2px;
+  transition: background 0.35s ease;
+}
+
+.step-line.active {
+  background: var(--primary-500);
+}
+
+/* Wizard step content panels */
+.wizard-step-content {
+  display: none;
+}
+
+.wizard-step-content.active {
+  display: block;
+  animation: wizardFadeSlide 0.22s ease;
+}
+
+@keyframes wizardFadeSlide {
+  from { opacity: 0; transform: translateX(10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.wizard-nav-actions {
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   AI Chat & Feature Styles
+   ========================================================================== */
+.ai-msg-bubble {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  word-break: break-word;
+}
+
+.ai-msg-bubble.user {
+  align-self: flex-end;
+  background: var(--primary-600);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.ai-msg-bubble.assistant {
+  align-self: flex-start;
+  background: #f1f5f9;
+  color: var(--text-dark);
+  border-bottom-left-radius: 4px;
+  border: 1px solid var(--border-subtle);
+}
+
+.msg-sender {
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  opacity: 0.85;
+}
+
+.ai-prompt-chip {
+  font-size: 0.74rem;
+  padding: 6px 12px;
+  white-space: nowrap;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-prompt-chip:hover {
+  border-color: var(--primary-500);
+  color: var(--primary-700);
+  background: var(--primary-50);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+
 

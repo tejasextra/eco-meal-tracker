@@ -1,14 +1,14 @@
-const CACHE_NAME = 'annam-v1.1.0';
+const CACHE_NAME = 'annam-v1.3.1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './css/styles.css?v=1.1.0',
-  './js/app.js?v=1.1.0',
-  './js/storage.js?v=1.1.0',
-  './js/foodData.js?v=1.1.0',
-  './js/charts.js?v=1.1.0',
-  './js/achievements.js?v=1.1.0',
-  './manifest.json?v=1.1.0',
+  './css/styles.css?v=1.3.1',
+  './js/app.js?v=1.3.1',
+  './js/storage.js?v=1.3.1',
+  './js/foodData.js?v=1.3.1',
+  './js/charts.js?v=1.3.1',
+  './js/achievements.js?v=1.3.1',
+  './manifest.json?v=1.3.1',
   './icons/icon-192.png',
   './icons/icon-512.png',
   'https://unpkg.com/lucide@latest',
